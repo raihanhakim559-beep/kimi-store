@@ -3,19 +3,24 @@ import { notFound } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import {
+  getCategoriesByAudience,
   getCategoryBySlug,
   getProductsByCategory,
-  products,
 } from "@/lib/data/storefront";
 
-const WomenCategoryPage = ({ params }: { params: { category: string } }) => {
-  const category = getCategoryBySlug(params.category);
+const WomenCategoryPage = async ({
+  params,
+}: {
+  params: { category: string };
+}) => {
+  const [category, categoryProducts] = await Promise.all([
+    getCategoryBySlug(params.category),
+    getProductsByCategory(params.category),
+  ]);
 
   if (!category || category.audience !== "women") {
     notFound();
   }
-
-  const categoryProducts = getProductsByCategory(category.slug);
 
   return (
     <div className="space-y-10">
@@ -86,13 +91,9 @@ const WomenCategoryPage = ({ params }: { params: { category: string } }) => {
   );
 };
 
-export const generateStaticParams = () =>
-  Array.from(
-    new Set(
-      products
-        .filter((product) => product.audience === "women")
-        .map((product) => product.category),
-    ),
-  ).map((category) => ({ category }));
+export const generateStaticParams = async () => {
+  const categories = await getCategoriesByAudience("women");
+  return categories.map((category) => ({ category: category.slug }));
+};
 
 export default WomenCategoryPage;

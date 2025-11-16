@@ -1,9 +1,9 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { storefrontCollections } from "@/lib/data/storefront";
+import { getStorefrontCollections } from "@/lib/data/storefront";
 
-const SalePage = () => {
-  const saleProducts = storefrontCollections.sale;
+const SalePage = async () => {
+  const { sale: saleProducts } = await getStorefrontCollections();
 
   return (
     <div className="space-y-10">

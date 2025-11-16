@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { getProductBySlug, products } from "@/lib/data/storefront";
+import { getAllProducts, getProductBySlug } from "@/lib/data/storefront";
 
-const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
-  const product = getProductBySlug(params.slug);
+const ProductDetailPage = async ({ params }: { params: { slug: string } }) => {
+  const product = await getProductBySlug(params.slug);
 
   if (!product) {
     notFound();
@@ -63,7 +63,9 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
   );
 };
 
-export const generateStaticParams = () =>
-  products.map((product) => ({ slug: product.slug }));
+export const generateStaticParams = async () => {
+  const catalog = await getAllProducts();
+  return catalog.map((product) => ({ slug: product.slug }));
+};
 
 export default ProductDetailPage;

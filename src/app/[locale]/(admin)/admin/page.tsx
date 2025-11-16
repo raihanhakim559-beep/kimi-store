@@ -1,8 +1,10 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { dashboardOverview } from "@/lib/data/storefront";
+import { getDashboardOverview } from "@/lib/data/storefront";
 
-const AdminHomePage = () => {
+const AdminHomePage = async () => {
+  const dashboardOverview = await getDashboardOverview();
+
   return (
     <div className="space-y-10">
       <header className="rounded-3xl border border-white/10 bg-white/5 p-8">

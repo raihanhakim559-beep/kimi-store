@@ -2,9 +2,11 @@ import { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { adminModules } from "@/lib/data/storefront";
+import { getAdminModules } from "@/lib/data/storefront";
 
-const AdminLayout = ({ children }: { children: ReactNode }) => {
+const AdminLayout = async ({ children }: { children: ReactNode }) => {
+  const adminModules = await getAdminModules();
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
       <header className="border-b border-white/10 bg-slate-950/80">

@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { getAdminModuleBySlug } from "@/lib/data/storefront";
 
-const AdminDiscountsPage = () => {
-  const adminModule = getAdminModuleBySlug("discounts");
+const AdminDiscountsPage = async () => {
+  const adminModule = await getAdminModuleBySlug("discounts");
 
   if (!adminModule) {
     notFound();

@@ -163,6 +163,7 @@ export const categories = pgTable(
     description: text("description"),
     gender: productGenderEnum("gender").default("unisex").notNull(),
     parentCategoryId: text("parentCategoryId"),
+    metadata: jsonb("metadata"),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),

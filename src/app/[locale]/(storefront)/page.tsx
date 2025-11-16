@@ -2,11 +2,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import {
   blogPosts,
-  storefrontCollections,
+  getStorefrontCollections,
   storefrontNavLinks,
 } from "@/lib/data/storefront";
 
-const HomePage = () => {
+const HomePage = async () => {
+  const collections = await getStorefrontCollections();
   const featuredBlog = blogPosts.slice(0, 2);
 
   return (
@@ -82,7 +83,7 @@ const HomePage = () => {
           </Link>
         </div>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {storefrontCollections.men.map((category) => (
+          {collections.men.map((category) => (
             <Link
               key={category.slug}
               href={`/men/${category.slug}`}
@@ -118,7 +119,7 @@ const HomePage = () => {
           </Link>
         </div>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {storefrontCollections.women.map((category) => (
+          {collections.women.map((category) => (
             <Link
               key={category.slug}
               href={`/women/${category.slug}`}

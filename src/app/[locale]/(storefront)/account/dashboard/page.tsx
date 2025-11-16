@@ -1,8 +1,9 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { dashboardTimeline } from "@/lib/data/storefront";
+import { getDashboardTimeline } from "@/lib/data/storefront";
 
-const AccountDashboardPage = () => {
+const AccountDashboardPage = async () => {
+  const dashboardTimeline = await getDashboardTimeline();
   return (
     <div className="space-y-10">
       <header className="bg-muted/50 rounded-3xl border p-8">

@@ -1,13 +1,14 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { products } from "@/lib/data/storefront";
+import { getAllProducts } from "@/lib/data/storefront";
 
-const lineItems = products.slice(0, 2).map((product, index) => ({
-  ...product,
-  quantity: index === 0 ? 1 : 2,
-}));
+const CartPage = async () => {
+  const catalog = await getAllProducts();
+  const lineItems = catalog.slice(0, 2).map((product, index) => ({
+    ...product,
+    quantity: index === 0 ? 1 : 2,
+  }));
 
-const CartPage = () => {
   const subtotal = lineItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
