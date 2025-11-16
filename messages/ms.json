@@ -1,0 +1,8 @@
+{
+  "home": {
+    "signIn": "Log masuk",
+    "signOut": "Log keluar",
+    "subtitle": "Templat permulaan Next.js dengan pelbagai ciri seperti TypeScript, Tailwind CSS, Next-auth, Eslint, Stripe, alat ujian dan banyak lagi. Mulakan projek anda dengan cekap dan bergaya.",
+    "getStartedButton": "Mula sekarang"
+  }
+}
