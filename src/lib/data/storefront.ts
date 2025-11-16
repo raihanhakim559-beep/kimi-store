@@ -2,6 +2,13 @@ import { and, desc, eq, type InferSelectModel, type SQL } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
 
+import { routing } from "@/i18n/routing";
+import {
+  type Copy,
+  type Locale,
+  makeCopy,
+  translateCopy,
+} from "@/lib/i18n/copy";
 import {
   categories,
   db,
@@ -457,23 +464,70 @@ export const blogPosts: BlogPost[] = [
   },
 ];
 
-export const faqs: Faq[] = [
+type LocalizedFaqEntry = {
+  question: Copy;
+  answer: Copy;
+};
+
+const faqHeroCopy = {
+  label: makeCopy({ en: "FAQ", ms: "Soalan Lazim" }),
+  title: makeCopy({
+    en: "Your top questions, answered.",
+    ms: "Soalan utama anda, kami jawab.",
+  }),
+  description: makeCopy({
+    en: "Details about shipping, returns, and care. Need more support? Tap Contact for live help.",
+    ms: "Butiran tentang penghantaran, pemulangan, dan penjagaan. Perlu bantuan lanjut? Pilih Hubungi untuk sokongan segera.",
+  }),
+};
+
+const faqEntries: LocalizedFaqEntry[] = [
   {
-    question: "What is the delivery timeline?",
-    answer:
-      "Domestic orders ship within 24 hours and arrive in 2-4 business days. Express shipping is available at checkout.",
+    question: makeCopy({
+      en: "What is the delivery timeline?",
+      ms: "Apakah garis masa penghantaran?",
+    }),
+    answer: makeCopy({
+      en: "Domestic orders ship within 24 hours and arrive in 2-4 business days. Express shipping is available at checkout.",
+      ms: "Pesanan dalam negara dihantar dalam masa 24 jam dan tiba dalam 2-4 hari bekerja. Penghantaran ekspres tersedia ketika pembayaran.",
+    }),
   },
   {
-    question: "How do I start a return?",
-    answer:
-      "Initiate a return through your dashboard. Print the prepaid label and drop the parcel at any courier partner within 30 days.",
+    question: makeCopy({
+      en: "How do I start a return?",
+      ms: "Bagaimana saya memulakan pemulangan?",
+    }),
+    answer: makeCopy({
+      en: "Initiate a return through your dashboard. Print the prepaid label and drop the parcel at any courier partner within 30 days.",
+      ms: "Mulakan pemulangan melalui papan pemuka anda. Cetak label prabayar dan serahkan bungkusan di mana-mana rakan kurier dalam tempoh 30 hari.",
+    }),
   },
   {
-    question: "Do you offer product care guides?",
-    answer:
-      "Yes, every order includes a QR code linking to material-specific cleaning steps and storage tips.",
+    question: makeCopy({
+      en: "Do you offer product care guides?",
+      ms: "Adakah anda menawarkan panduan penjagaan produk?",
+    }),
+    answer: makeCopy({
+      en: "Yes, every order includes a QR code linking to material-specific cleaning steps and storage tips.",
+      ms: "Ya, setiap pesanan disertakan kod QR yang memaut kepada langkah pembersihan mengikut material serta tip penyimpanan.",
+    }),
   },
 ];
+
+export const getFaqEntries = (locale: Locale): Faq[] =>
+  faqEntries.map((entry) => ({
+    question: translateCopy(entry.question, locale),
+    answer: translateCopy(entry.answer, locale),
+  }));
+
+export const getFaqContent = (locale: Locale) => ({
+  label: translateCopy(faqHeroCopy.label, locale),
+  title: translateCopy(faqHeroCopy.title, locale),
+  description: translateCopy(faqHeroCopy.description, locale),
+  entries: getFaqEntries(locale),
+});
+
+export const faqs: Faq[] = getFaqEntries(routing.defaultLocale);
 
 export const contactChannels: ContactChannel[] = [
   {
@@ -493,26 +547,74 @@ export const contactChannels: ContactChannel[] = [
   },
 ];
 
-export const aboutContent = {
-  hero: "We design footwear that keeps up with life in constant motion.",
+type LocalizedAboutPillar = {
+  title: Copy;
+  detail: Copy;
+};
+
+const aboutCopy = {
+  label: makeCopy({ en: "About us", ms: "Tentang kami" }),
+  hero: makeCopy({
+    en: "We design footwear that keeps up with life in constant motion.",
+    ms: "Kami mereka kasut yang mengikuti ritma hidup yang sentiasa bergerak.",
+  }),
+  description: makeCopy({
+    en: "Kimi Store Shoes is a Malaysia-born design lab crafting products for global city life. We combine biomechanics with expressive styling to make shoes that keep up with the calendar.",
+    ms: "Kimi Store Shoes ialah makmal reka bentuk kelahiran Malaysia yang mencipta produk untuk gaya hidup bandar global. Kami menggabungkan biomekanik dengan gaya ekspresif untuk menghasilkan kasut yang seiring dengan jadual anda.",
+  }),
   pillars: [
     {
-      title: "Human-Centered",
-      detail:
-        "Fits are drafted from 3D scans collected across three continents for inclusive sizing.",
+      title: makeCopy({
+        en: "Human-Centered",
+        ms: "Berpusatkan Manusia",
+      }),
+      detail: makeCopy({
+        en: "Fits are drafted from 3D scans collected across three continents for inclusive sizing.",
+        ms: "Potongan dibangunkan daripada imbasan 3D yang dikumpul di tiga benua bagi memastikan saiz yang inklusif.",
+      }),
     },
     {
-      title: "Materially Responsible",
-      detail:
-        "71% of our line uses recycled or bio-based textiles without compromising longevity.",
+      title: makeCopy({
+        en: "Materially Responsible",
+        ms: "Bertanggungjawab terhadap Material",
+      }),
+      detail: makeCopy({
+        en: "71% of our line uses recycled or bio-based textiles without compromising longevity.",
+        ms: "71% koleksi kami menggunakan tekstil kitar semula atau berasaskan bio tanpa menjejaskan ketahanan.",
+      }),
     },
     {
-      title: "Service Obsessed",
-      detail:
-        "We pair each launch with concierge services—text, chat, or video fittings on demand.",
+      title: makeCopy({
+        en: "Service Obsessed",
+        ms: "Taksub kepada Servis",
+      }),
+      detail: makeCopy({
+        en: "We pair each launch with concierge services—text, chat, or video fittings on demand.",
+        ms: "Setiap pelancaran ditemani perkhidmatan concierge—mesej, sembang, atau sesi fitting video atas permintaan.",
+      }),
     },
-  ],
+  ] satisfies LocalizedAboutPillar[],
 };
+
+export type AboutContent = {
+  label: string;
+  hero: string;
+  description: string;
+  pillars: { title: string; detail: string }[];
+};
+
+const buildAboutContent = (locale: Locale): AboutContent => ({
+  label: translateCopy(aboutCopy.label, locale),
+  hero: translateCopy(aboutCopy.hero, locale),
+  description: translateCopy(aboutCopy.description, locale),
+  pillars: aboutCopy.pillars.map((pillar) => ({
+    title: translateCopy(pillar.title, locale),
+    detail: translateCopy(pillar.detail, locale),
+  })),
+});
+
+export const getAboutContent = buildAboutContent;
+export const aboutContent = buildAboutContent(routing.defaultLocale);
 
 export const contentNav = {
   primary: [
@@ -528,6 +630,94 @@ export const contentNav = {
     { label: "FAQ", href: "/faq" },
   ],
 };
+
+export type CollectionKey = "men" | "women" | "new-arrivals" | "sale";
+
+type CollectionChipDefinition = {
+  key: CollectionKey;
+  href: string;
+  label: Copy;
+  description: Copy;
+};
+
+type CollectionChipGroupDefinition = {
+  label: Copy;
+  chips: CollectionChipDefinition[];
+};
+
+const collectionChipGroups: CollectionChipGroupDefinition[] = [
+  {
+    label: makeCopy({ en: "Core collections", ms: "Koleksi teras" }),
+    chips: [
+      {
+        key: "men",
+        href: "/men",
+        label: makeCopy({ en: "Men", ms: "Lelaki" }),
+        description: makeCopy({
+          en: "Velocity-driven essentials built for the city.",
+          ms: "Keperluan laju yang direka untuk kota.",
+        }),
+      },
+      {
+        key: "women",
+        href: "/women",
+        label: makeCopy({ en: "Women", ms: "Wanita" }),
+        description: makeCopy({
+          en: "Studio-ready silhouettes tuned for expression.",
+          ms: "Siluet sedia studio untuk ekspresi diri.",
+        }),
+      },
+    ],
+  },
+  {
+    label: makeCopy({ en: "Campaign highlights", ms: "Sorotan kempen" }),
+    chips: [
+      {
+        key: "new-arrivals",
+        href: "/new-arrivals",
+        label: makeCopy({ en: "New Arrivals", ms: "Koleksi Baharu" }),
+        description: makeCopy({
+          en: "Fresh drops with experimental foams.",
+          ms: "Keluaran baharu dengan busa eksperimental.",
+        }),
+      },
+      {
+        key: "sale",
+        href: "/sale",
+        label: makeCopy({ en: "Sale", ms: "Jualan" }),
+        description: makeCopy({
+          en: "Limited promos on final sizes.",
+          ms: "Promosi terhad untuk saiz terakhir.",
+        }),
+      },
+    ],
+  },
+];
+
+export type CollectionChip = {
+  key: CollectionKey;
+  href: string;
+  label: string;
+  description: string;
+};
+
+export type CollectionChipGroup = {
+  label: string;
+  chips: CollectionChip[];
+};
+
+export const getCollectionChipGroups = (
+  locale: Locale,
+): CollectionChipGroup[] =>
+  collectionChipGroups.map((group) => ({
+    label: translateCopy(group.label, locale),
+    chips: group.chips.map((chip) => ({
+      key: chip.key,
+      href: chip.href,
+      label: translateCopy(chip.label, locale),
+      description: translateCopy(chip.description, locale),
+    })),
+  }));
 
 const adminModuleBlueprints: AdminModuleBlueprint[] = [
   {

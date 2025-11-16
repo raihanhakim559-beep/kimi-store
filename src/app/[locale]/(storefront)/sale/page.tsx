@@ -1,9 +1,32 @@
+import type { Metadata } from "next";
+
+import { CollectionFilterChips } from "@/components/collection-filter-chips";
 import { buttonVariants } from "@/components/ui/button";
 import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import { getSeoMeta } from "@/lib/data/seo";
 import { getStorefrontCollections } from "@/lib/data/storefront";
+import { type Locale } from "@/lib/i18n/copy";
 
-const SalePage = async () => {
+type SalePageProps = {
+  params: { locale: string };
+};
+
+export async function generateMetadata({
+  params,
+}: SalePageProps): Promise<Metadata> {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+  const seo = getSeoMeta("sale", locale);
+
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
+
+const SalePage = async ({ params }: SalePageProps) => {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
   const { sale: saleProducts } = await getStorefrontCollections();
 
   return (
@@ -18,6 +41,7 @@ const SalePage = async () => {
           update in your cart.
         </p>
       </header>
+      <CollectionFilterChips locale={locale} activeKey="sale" />
       <section className="grid gap-6 md:grid-cols-2">
         {saleProducts.map((product) => (
           <article key={product.slug} className="rounded-2xl border p-6">

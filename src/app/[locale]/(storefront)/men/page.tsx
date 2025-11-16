@@ -1,8 +1,31 @@
+import type { Metadata } from "next";
+
+import { CollectionFilterChips } from "@/components/collection-filter-chips";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import { getSeoMeta } from "@/lib/data/seo";
 import { getStorefrontCollections } from "@/lib/data/storefront";
+import { type Locale } from "@/lib/i18n/copy";
 
-const MenShoesPage = async () => {
+type MenShoesPageProps = {
+  params: { locale: string };
+};
+
+export async function generateMetadata({
+  params,
+}: MenShoesPageProps): Promise<Metadata> {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+  const seo = getSeoMeta("men", locale);
+
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
+
+const MenShoesPage = async ({ params }: MenShoesPageProps) => {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
   const { men: categories } = await getStorefrontCollections();
 
   return (
@@ -31,6 +54,7 @@ const MenShoesPage = async () => {
           ))}
         </div>
       </header>
+      <CollectionFilterChips locale={locale} activeKey="men" />
       <section className="grid gap-6 md:grid-cols-3">
         {categories.map((category) => (
           <article key={category.slug} className="rounded-2xl border p-6">

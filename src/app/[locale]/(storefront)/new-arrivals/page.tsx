@@ -1,9 +1,32 @@
+import type { Metadata } from "next";
+
+import { CollectionFilterChips } from "@/components/collection-filter-chips";
 import { buttonVariants } from "@/components/ui/button";
 import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+import { getSeoMeta } from "@/lib/data/seo";
 import { getStorefrontCollections } from "@/lib/data/storefront";
+import { type Locale } from "@/lib/i18n/copy";
 
-const NewArrivalsPage = async () => {
+type NewArrivalsPageProps = {
+  params: { locale: string };
+};
+
+export async function generateMetadata({
+  params,
+}: NewArrivalsPageProps): Promise<Metadata> {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+  const seo = getSeoMeta("newArrivals", locale);
+
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
+
+const NewArrivalsPage = async ({ params }: NewArrivalsPageProps) => {
+  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
   const { newArrivals: arrivals } = await getStorefrontCollections();
 
   return (
@@ -29,6 +52,7 @@ const NewArrivalsPage = async () => {
           Explore men’s shop
         </Link>
       </header>
+      <CollectionFilterChips locale={locale} activeKey="new-arrivals" />
       <section className="grid gap-6 md:grid-cols-2">
         {arrivals.map((product) => (
           <article key={product.slug} className="rounded-2xl border p-6">
