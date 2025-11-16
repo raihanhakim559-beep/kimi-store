@@ -6,11 +6,13 @@ import { AdminModule } from "@/lib/data/storefront";
 type AdminModuleTemplateProps = {
   module: AdminModule;
   emptyState?: ReactNode;
+  children?: ReactNode;
 };
 
 export const AdminModuleTemplate = ({
   module,
   emptyState,
+  children,
 }: AdminModuleTemplateProps) => {
   return (
     <div className="space-y-8">
@@ -38,30 +40,34 @@ export const AdminModuleTemplate = ({
         </button>
       </header>
       <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h2 className="text-xl font-semibold">Workflow queue</h2>
-        <p className="mt-2 text-sm text-slate-300">
-          Placeholder items showing how this management hub could look. Replace
-          with live data once hooked to APIs.
-        </p>
-        <div className="mt-4 space-y-3">
-          {emptyState || (
-            <>
-              <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4">
-                <p className="text-sm font-semibold">Pending review</p>
-                <p className="text-xs text-slate-400">
-                  Assign teammates and lock approvals.
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4">
-                <p className="text-sm font-semibold">Automation rules</p>
-                <p className="text-xs text-slate-400">
-                  Create triggers for low stock, draft content, or flagged
-                  orders.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+        {children ?? (
+          <>
+            <h2 className="text-xl font-semibold">Workflow queue</h2>
+            <p className="mt-2 text-sm text-slate-300">
+              Placeholder items showing how this management hub could look.
+              Replace with live data once hooked to APIs.
+            </p>
+            <div className="mt-4 space-y-3">
+              {emptyState || (
+                <>
+                  <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                    <p className="text-sm font-semibold">Pending review</p>
+                    <p className="text-xs text-slate-400">
+                      Assign teammates and lock approvals.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                    <p className="text-sm font-semibold">Automation rules</p>
+                    <p className="text-xs text-slate-400">
+                      Create triggers for low stock, draft content, or flagged
+                      orders.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </section>
     </div>
   );
