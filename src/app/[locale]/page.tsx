@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import { AuthControls } from "@/components/auth-controls";
 import { Icons } from "@/components/icons";
-import { StripeButton } from "@/components/stripe-button";
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 
@@ -34,9 +33,7 @@ const HomePage = async () => {
           {t("subtitle")}
         </p>
         <div className="mt-2 flex gap-4">
-          {session ? (
-            <StripeButton />
-          ) : (
+          {session ? null : (
             <Link
               href="https://github.com/Skolaczk/next-starter/blob/main/README.md#getting-started"
               target="_blank"
