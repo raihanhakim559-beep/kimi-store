@@ -1,4 +1,13 @@
-import { and, desc, eq, type InferSelectModel, type SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  type InferSelectModel,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
 
@@ -14,6 +23,7 @@ import {
   db,
   orderItems,
   orders,
+  productImages,
   products,
   productVariants,
   promoCodes,
@@ -33,15 +43,18 @@ export type Category = {
 };
 
 export type Product = {
+  id: string;
   slug: string;
   title: string;
   description: string;
   audience: Audience;
   category: string;
   price: number;
+  currency: string;
   status?: ProductStatus;
   specs: string[];
   colors: string[];
+  createdAt: Date;
 };
 
 export type ProductVariantOption = {
@@ -53,9 +66,51 @@ export type ProductVariantOption = {
   isDefault: boolean;
 };
 
+export type ProductImage = {
+  id: string;
+  url: string;
+  alt?: string | null;
+  isPrimary: boolean;
+};
+
 export type ProductDetail = Product & {
   variants: ProductVariantOption[];
+  media: ProductImage[];
+  related: Product[];
 };
+
+export type ProductReview = {
+  id: string;
+  author: string;
+  rating: number;
+  headline: string;
+  body: string;
+  createdAt: string;
+};
+
+const reviewTemplates: Omit<ProductReview, "id">[] = [
+  {
+    author: "Kai Brennan",
+    rating: 5,
+    headline: "Cloud cushioning for 14-hour days",
+    body: "Rotated these through a conference week and never once wanted to switch pairs. Foam rebounds fast and the collar padding stops rubbing even without socks.",
+    createdAt: "2025-08-04",
+  },
+  {
+    author: "Nadia Lim",
+    rating: 4,
+    headline: "Stable platform for HIIT",
+    body: "Lateral support feels dialed—no ankle wobble during jumps. Runs slightly narrow so I sized up half a size.",
+    createdAt: "2025-07-16",
+  },
+  {
+    author: "Mateo Ortiz",
+    rating: 5,
+    headline: "Waterproof without the heat",
+    body: "Tested in KL storms and feet stayed dry while the knit still breathed. Traction on wet tile is impressive.",
+    createdAt: "2025-06-02",
+  },
+];
 
 type BlogPostSection = {
   heading?: string;
@@ -113,6 +168,33 @@ export type StorefrontCollections = {
   women: Category[];
   newArrivals: Product[];
   sale: Product[];
+};
+
+export type CategoryProductSort =
+  | "featured"
+  | "newest"
+  | "priceLow"
+  | "priceHigh";
+
+export type CategoryProductFilters = {
+  sizes?: string[];
+  colors?: string[];
+  tags?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  sort?: CategoryProductSort;
+};
+
+export type CategoryProductFacets = {
+  sizes: string[];
+  colors: string[];
+  tags: string[];
+  price: { min: number; max: number };
+};
+
+export type CategoryProductResult = {
+  products: Product[];
+  facets: CategoryProductFacets;
 };
 
 type AdminModuleBlueprint = Omit<AdminModule, "metrics">;
@@ -237,6 +319,7 @@ const mapCategoryRecord = (record: {
 };
 
 const mapProductRecord = (record: {
+  id: string;
   slug: string;
   name: string;
   summary: string | null;
@@ -246,6 +329,7 @@ const mapProductRecord = (record: {
   metadata: ProductRow["metadata"];
   categorySlug: string;
   gender: CategoryRow["gender"];
+  createdAt: Date;
 }): Product => {
   const metadata = parseProductMetadata(record.metadata);
   const badge = metadata.badges?.find(
@@ -253,15 +337,18 @@ const mapProductRecord = (record: {
   );
 
   return {
+    id: record.id,
     slug: record.slug,
     title: record.name,
     description: record.summary ?? record.description ?? "",
     audience: normalizeAudience(record.gender),
     category: record.categorySlug,
     price: record.price / 100,
+    currency: record.currency,
     status: badge,
     specs: metadata.specs ?? [],
     colors: metadata.colors ?? [],
+    createdAt: record.createdAt,
   };
 };
 
@@ -309,6 +396,7 @@ const selectActiveProducts = async (options: ProductQueryOptions = {}) => {
 
   const baseQuery = db
     .select({
+      id: products.id,
       slug: products.slug,
       name: products.name,
       summary: products.summary,
@@ -318,6 +406,7 @@ const selectActiveProducts = async (options: ProductQueryOptions = {}) => {
       metadata: products.metadata,
       categorySlug: categories.slug,
       gender: categories.gender,
+      createdAt: products.createdAt,
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
@@ -334,9 +423,162 @@ const fetchAllActiveProducts = cache(async () => selectActiveProducts());
 
 export const getAllProducts = fetchAllActiveProducts;
 
-export const getProductsByCategory = cache(async (slug: string) =>
-  selectActiveProducts({ where: eq(categories.slug, slug) }),
-);
+const sortProducts = (
+  list: Product[],
+  sort: CategoryProductSort = "featured",
+) => {
+  if (sort === "priceLow") {
+    return [...list].sort((a, b) => a.price - b.price);
+  }
+
+  if (sort === "priceHigh") {
+    return [...list].sort((a, b) => b.price - a.price);
+  }
+
+  if (sort === "newest") {
+    return [...list].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  }
+
+  return [...list];
+};
+
+const normalizeArray = (values?: string[]) =>
+  values?.map((value) => value.trim()).filter(Boolean) ?? [];
+
+export const getProductsByCategory = async (
+  slug: string,
+  filters: CategoryProductFilters = {},
+): Promise<CategoryProductResult> => {
+  const baseProducts = await selectActiveProducts({
+    where: eq(categories.slug, slug),
+  });
+
+  const priceValues = baseProducts.map((product) => product.price);
+  const priceRange = priceValues.length
+    ? {
+        min: Math.min(...priceValues),
+        max: Math.max(...priceValues),
+      }
+    : { min: 0, max: 0 };
+
+  if (baseProducts.length === 0) {
+    return {
+      products: [],
+      facets: { sizes: [], colors: [], tags: [], price: priceRange },
+    };
+  }
+
+  const productIds = baseProducts.map((product) => product.id);
+  let variantRows: { productId: string; size: string; color: string | null }[] =
+    [];
+
+  if (productIds.length > 0) {
+    variantRows = await db
+      .select({
+        productId: productVariants.productId,
+        size: productVariants.size,
+        color: productVariants.color,
+      })
+      .from(productVariants)
+      .where(inArray(productVariants.productId, productIds));
+  }
+
+  const sizeSet = new Set<string>();
+  const colorSet = new Set<string>();
+  const variantIndex = new Map<
+    string,
+    {
+      sizes: Set<string>;
+      colors: Set<string>;
+    }
+  >();
+
+  variantRows.forEach(({ productId, size, color }) => {
+    sizeSet.add(size);
+    const indexEntry = variantIndex.get(productId) ?? {
+      sizes: new Set<string>(),
+      colors: new Set<string>(),
+    };
+    indexEntry.sizes.add(size);
+    if (color) {
+      colorSet.add(color);
+      indexEntry.colors.add(color);
+    }
+    variantIndex.set(productId, indexEntry);
+  });
+
+  const tagSet = new Set<string>();
+  baseProducts.forEach((product) => {
+    product.specs.forEach((spec) => tagSet.add(spec));
+  });
+
+  const requestedSizes = normalizeArray(filters.sizes).map((value) =>
+    value.toLowerCase(),
+  );
+  const requestedColors = normalizeArray(filters.colors).map((value) =>
+    value.toLowerCase(),
+  );
+  const requestedTags = normalizeArray(filters.tags).map((value) =>
+    value.toLowerCase(),
+  );
+
+  let filtered = baseProducts;
+
+  if (filters.priceMin !== undefined) {
+    filtered = filtered.filter((product) => product.price >= filters.priceMin!);
+  }
+
+  if (filters.priceMax !== undefined) {
+    filtered = filtered.filter((product) => product.price <= filters.priceMax!);
+  }
+
+  if (requestedSizes.length > 0) {
+    filtered = filtered.filter((product) => {
+      const sizes = variantIndex.get(product.id)?.sizes;
+      if (!sizes || sizes.size === 0) {
+        return false;
+      }
+      const normalizedSizes = Array.from(sizes).map((size) =>
+        size.toLowerCase(),
+      );
+      return requestedSizes.some((size) => normalizedSizes.includes(size));
+    });
+  }
+
+  if (requestedColors.length > 0) {
+    filtered = filtered.filter((product) => {
+      const colors = variantIndex.get(product.id)?.colors ?? new Set();
+      const normalizedColors = Array.from(colors).map((color) =>
+        color.toLowerCase(),
+      );
+      return requestedColors.some((color) => normalizedColors.includes(color));
+    });
+  }
+
+  if (requestedTags.length > 0) {
+    filtered = filtered.filter((product) =>
+      product.specs.some((spec) =>
+        requestedTags.some((tag) => spec.toLowerCase().includes(tag)),
+      ),
+    );
+  }
+
+  const sorted = sortProducts(filtered, filters.sort ?? "featured");
+
+  return {
+    products: sorted,
+    facets: {
+      sizes: Array.from(sizeSet).sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true }),
+      ),
+      colors: Array.from(colorSet).sort((a, b) => a.localeCompare(b)),
+      tags: Array.from(tagSet).sort((a, b) => a.localeCompare(b)),
+      price: priceRange,
+    },
+  };
+};
 
 export const getProductBySlug = cache(async (slug: string) => {
   const [product] = await selectActiveProducts({
@@ -359,6 +601,7 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
       metadata: products.metadata,
       categorySlug: categories.slug,
       gender: categories.gender,
+      createdAt: products.createdAt,
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
@@ -384,6 +627,43 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
     .where(eq(productVariants.productId, productRow.id))
     .orderBy(desc(productVariants.isDefault), productVariants.size);
 
+  const imageRows = await db
+    .select({
+      id: productImages.id,
+      url: productImages.url,
+      alt: productImages.alt,
+      isPrimary: productImages.isPrimary,
+      position: productImages.position,
+    })
+    .from(productImages)
+    .where(eq(productImages.productId, productRow.id))
+    .orderBy(desc(productImages.isPrimary), productImages.position);
+
+  const gallery = imageRows.length
+    ? imageRows.map((image) => ({
+        id: image.id,
+        url: image.url,
+        alt: image.alt,
+        isPrimary: image.isPrimary,
+      }))
+    : [
+        {
+          id: `${productRow.id}-fallback`,
+          url: `https://images.unsplash.com/photo-1528701800489-20be3cbe2233?auto=format&fit=crop&w=900&q=80`,
+          alt: `${baseProduct.title} preview`,
+          isPrimary: true,
+        },
+      ];
+
+  const relatedPool = await selectActiveProducts({
+    where: eq(categories.slug, productRow.categorySlug),
+    limit: 6,
+  });
+
+  const related = relatedPool
+    .filter((product) => product.slug !== baseProduct.slug)
+    .slice(0, 4);
+
   return {
     ...baseProduct,
     variants: variantRows.map((variant) => ({
@@ -394,6 +674,8 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
       priceOverride: variant.priceOverride ? variant.priceOverride / 100 : null,
       isDefault: variant.isDefault,
     })),
+    media: gallery,
+    related,
   } satisfies ProductDetail;
 });
 
@@ -401,6 +683,32 @@ export const getProductsByBadge = cache(async (badge: ProductStatus) => {
   const list = await fetchAllActiveProducts();
   return list.filter((product) => product.status === badge);
 });
+
+export const searchProducts = cache(async (rawQuery: string, limit = 24) => {
+  const trimmed = rawQuery.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const normalized = trimmed.replace(/\s+/g, " ");
+  const pattern = `%${normalized.replace(/ /g, "%")}%`;
+
+  return selectActiveProducts({
+    where: or(
+      ilike(products.name, pattern),
+      ilike(products.summary, pattern),
+      ilike(products.description, pattern),
+    ),
+    limit,
+  });
+});
+
+export const getProductReviews = cache(async (slug: string) =>
+  reviewTemplates.map((review, index) => ({
+    ...review,
+    id: `${slug}-${index}`,
+  })),
+);
 
 export const blogPosts: BlogPost[] = [
   {

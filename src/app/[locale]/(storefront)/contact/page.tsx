@@ -1,3 +1,4 @@
+import { ContactForm } from "@/components/contact-form";
 import { cmsPages } from "@/lib/data/storefront";
 
 const ContactPage = () => {
@@ -15,18 +16,30 @@ const ContactPage = () => {
           your order number for faster routing.
         </p>
       </header>
-      <section className="grid gap-6 md:grid-cols-3">
-        {contact.channels.map((channel) => (
-          <article key={channel.label} className="rounded-2xl border p-6">
-            <p className="text-muted-foreground text-xs uppercase">
-              {channel.label}
-            </p>
-            <p className="mt-2 text-xl font-semibold">{channel.value}</p>
-            <p className="text-muted-foreground mt-2 text-sm">
-              {channel.description}
-            </p>
-          </article>
-        ))}
+      <section className="grid gap-6 lg:grid-cols-[1fr,0.9fr]">
+        <div className="space-y-4">
+          {contact.channels.map((channel) => (
+            <article key={channel.label} className="rounded-2xl border p-6">
+              <p className="text-muted-foreground text-xs uppercase">
+                {channel.label}
+              </p>
+              <p className="mt-2 text-xl font-semibold">{channel.value}</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {channel.description}
+              </p>
+            </article>
+          ))}
+        </div>
+        <div className="rounded-2xl border p-6">
+          <h2 className="text-2xl font-semibold">Send a concierge request</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Response times average under 2 hours during service windows. Share
+            fit or delivery context so we can route faster.
+          </p>
+          <div className="mt-6">
+            <ContactForm />
+          </div>
+        </div>
       </section>
     </div>
   );

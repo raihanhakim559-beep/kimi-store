@@ -1,0 +1,1 @@
+2025-11-17 – Docs alignment check confirms Checkout & Stripe flow, Admin CRUD/Search suite, and Storefront polish (localized About/FAQ, SEO metadata, navigation chips) all meet the project brief.
