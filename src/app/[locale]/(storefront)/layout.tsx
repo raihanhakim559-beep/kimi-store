@@ -1,11 +1,15 @@
 import { ReactNode } from "react";
 
+import { AuthControls } from "@/components/auth-controls";
 import { SearchBar } from "@/components/search-bar";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import { auth } from "@/lib/auth";
 import { storefrontNavLinks } from "@/lib/data/storefront";
 
-const StorefrontLayout = ({ children }: { children: ReactNode }) => {
+const StorefrontLayout = async ({ children }: { children: ReactNode }) => {
+  const session = await auth();
+
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <header className="bg-background/80 sticky top-0 z-20 border-b backdrop-blur">
@@ -37,12 +41,7 @@ const StorefrontLayout = ({ children }: { children: ReactNode }) => {
             >
               Cart
             </Link>
-            <Link
-              href="/account/login"
-              className={buttonVariants({ size: "sm" })}
-            >
-              Login
-            </Link>
+            <AuthControls session={session} />
           </div>
         </div>
         <div className="border-t">

@@ -22,7 +22,7 @@ Each admin module uses shared UI that highlights current metrics, CTA buttons, a
 - TypeScript + ESLint + Prettier
 - Tailwind CSS 4 utility classes
 - next-intl for locale-aware routing (`/en`, `/ms`)
-- next-auth scaffolding (GitHub provider in place)
+- next-auth scaffolding (GitHub + Google + Apple providers ready)
 - Shadcn button primitives, Lucide icons
 - Jest + Testing Library, Playwright for E2E
 - Drizzle ORM + Neon-ready config, Stripe SDK hooks

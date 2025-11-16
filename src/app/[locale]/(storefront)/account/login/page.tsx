@@ -1,7 +1,10 @@
 import { AccountLoginActions } from "@/components/account-login-actions";
 import { Link } from "@/i18n/navigation";
+import { getEnabledAuthProviders } from "@/lib/auth/provider-config";
 
 const AccountLoginPage = () => {
+  const providers = getEnabledAuthProviders();
+
   return (
     <div className="bg-muted/40 mx-auto max-w-2xl space-y-8 rounded-3xl border p-8">
       <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
@@ -12,7 +15,7 @@ const AccountLoginPage = () => {
         Access order tracking, wishlist syncing, and saved checkout details.
         Continue with a secure provider to create or return to your profile.
       </p>
-      <AccountLoginActions />
+      <AccountLoginActions providers={providers} />
       <p className="text-muted-foreground text-xs">
         By continuing you agree to receive automated emails for account
         security. Read the{" "}
