@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/button";
+import { AccountLoginActions } from "@/components/account-login-actions";
 import { Link } from "@/i18n/navigation";
 
 const AccountLoginPage = () => {
@@ -9,35 +9,10 @@ const AccountLoginPage = () => {
       </p>
       <h1 className="text-4xl font-semibold">Sign in or create an account.</h1>
       <p className="text-muted-foreground">
-        Access order tracking, wishlist syncing, and saved checkout details. Use
-        a magic link or connect a social profile.
+        Access order tracking, wishlist syncing, and saved checkout details.
+        Continue with a secure provider to create or return to your profile.
       </p>
-      <form className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="email">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            className="bg-background w-full rounded-2xl border px-4 py-3"
-          />
-        </div>
-        <button className={buttonVariants({ className: "w-full" })}>
-          Send magic link
-        </button>
-      </form>
-      <div className="grid gap-3 md:grid-cols-2">
-        {["Continue with Apple", "Continue with Google"].map((provider) => (
-          <button
-            key={provider}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            {provider}
-          </button>
-        ))}
-      </div>
+      <AccountLoginActions />
       <p className="text-muted-foreground text-xs">
         By continuing you agree to receive automated emails for account
         security. Read the{" "}

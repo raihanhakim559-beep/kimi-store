@@ -1,5 +1,4 @@
-import type { InferSelectModel, SQL } from "drizzle-orm";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, type InferSelectModel, type SQL } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
 
@@ -9,6 +8,7 @@ import {
   orderItems,
   orders,
   products,
+  productVariants,
   promoCodes,
   users,
 } from "@/lib/schema";
@@ -35,6 +35,19 @@ export type Product = {
   status?: ProductStatus;
   specs: string[];
   colors: string[];
+};
+
+export type ProductVariantOption = {
+  id: string;
+  size: string;
+  color?: string | null;
+  stock: number;
+  priceOverride?: number | null;
+  isDefault: boolean;
+};
+
+export type ProductDetail = Product & {
+  variants: ProductVariantOption[];
 };
 
 type BlogPostSection = {
@@ -324,6 +337,57 @@ export const getProductBySlug = cache(async (slug: string) => {
     limit: 1,
   });
   return product ?? null;
+});
+
+export const getProductDetailBySlug = cache(async (slug: string) => {
+  const [productRow] = await db
+    .select({
+      id: products.id,
+      slug: products.slug,
+      name: products.name,
+      summary: products.summary,
+      description: products.description,
+      price: products.price,
+      currency: products.currency,
+      metadata: products.metadata,
+      categorySlug: categories.slug,
+      gender: categories.gender,
+    })
+    .from(products)
+    .innerJoin(categories, eq(products.categoryId, categories.id))
+    .where(and(eq(products.slug, slug), eq(products.status, "active")))
+    .limit(1);
+
+  if (!productRow) {
+    return null;
+  }
+
+  const baseProduct = mapProductRecord(productRow);
+
+  const variantRows = await db
+    .select({
+      id: productVariants.id,
+      size: productVariants.size,
+      color: productVariants.color,
+      stock: productVariants.stock,
+      priceOverride: productVariants.price,
+      isDefault: productVariants.isDefault,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, productRow.id))
+    .orderBy(desc(productVariants.isDefault), productVariants.size);
+
+  return {
+    ...baseProduct,
+    variants: variantRows.map((variant) => ({
+      id: variant.id,
+      size: variant.size,
+      color: variant.color,
+      stock: variant.stock,
+      priceOverride: variant.priceOverride ? variant.priceOverride / 100 : null,
+      isDefault: variant.isDefault,
+    })),
+  } satisfies ProductDetail;
 });
 
 export const getProductsByBadge = cache(async (badge: ProductStatus) => {

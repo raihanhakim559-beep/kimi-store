@@ -1,4 +1,5 @@
 import { buttonVariants } from "@/components/ui/button";
+import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
 import { getStorefrontCollections } from "@/lib/data/storefront";
 
@@ -33,13 +34,16 @@ const SalePage = async () => {
                 Extra 15% off at checkout
               </span>
             </div>
-            <div className="mt-6 flex justify-between">
-              <Link
-                href={`/products/${product.slug}`}
-                className={buttonVariants({ size: "sm" })}
-              >
-                View details
-              </Link>
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <WishlistToggleButton productSlug={product.slug} />
+                <Link
+                  href={`/products/${product.slug}`}
+                  className={buttonVariants({ size: "sm" })}
+                >
+                  View details
+                </Link>
+              </div>
               <Link
                 href="/cart"
                 className={buttonVariants({ variant: "outline", size: "sm" })}

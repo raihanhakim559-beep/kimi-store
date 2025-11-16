@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { buttonVariants } from "@/components/ui/button";
+import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
 import {
   getCategoriesByAudience,
@@ -69,19 +70,22 @@ const MenCategoryPage = async ({
                   ))}
                 </ul>
               </div>
-              <div className="mt-6 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-muted-foreground text-xs uppercase">
                     Starting at
                   </p>
                   <p className="text-xl font-semibold">${product.price}</p>
                 </div>
-                <Link
-                  href={`/products/${product.slug}`}
-                  className={buttonVariants({ size: "sm" })}
-                >
-                  View details
-                </Link>
+                <div className="flex items-center gap-2">
+                  <WishlistToggleButton productSlug={product.slug} />
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className={buttonVariants({ size: "sm" })}
+                  >
+                    View details
+                  </Link>
+                </div>
               </div>
             </article>
           ))}

@@ -1,15 +1,24 @@
 import { notFound } from "next/navigation";
 
+import { toggleWishlistItem } from "@/actions/wishlist";
+import { AddToCartForm } from "@/components/add-to-cart-form";
 import { buttonVariants } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
-import { getAllProducts, getProductBySlug } from "@/lib/data/storefront";
+import { getAllProducts, getProductDetailBySlug } from "@/lib/data/storefront";
 
 const ProductDetailPage = async ({ params }: { params: { slug: string } }) => {
-  const product = await getProductBySlug(params.slug);
+  const product = await getProductDetailBySlug(params.slug);
 
   if (!product) {
     notFound();
   }
+
+  const variantOptions = product.variants.map((variant) => ({
+    id: variant.id,
+    label:
+      [variant.size, variant.color].filter(Boolean).join(" · ") || variant.size,
+    stock: variant.stock,
+    isDefault: variant.isDefault,
+  }));
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr,0.9fr]">
@@ -44,15 +53,19 @@ const ProductDetailPage = async ({ params }: { params: { slug: string } }) => {
           </ul>
         </div>
         <div className="flex flex-wrap gap-4">
-          <Link href="/cart" className={buttonVariants({ size: "lg" })}>
-            Add to cart
-          </Link>
-          <Link
-            href="/wishlist"
-            className={buttonVariants({ variant: "outline", size: "lg" })}
-          >
-            Save to wishlist
-          </Link>
+          <AddToCartForm
+            productSlug={product.slug}
+            variantOptions={variantOptions}
+            className="rounded-2xl border p-4"
+          />
+          <form action={toggleWishlistItem}>
+            <input type="hidden" name="productSlug" value={product.slug} />
+            <button
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Save to wishlist
+            </button>
+          </form>
         </div>
         <p className="text-muted-foreground text-sm">
           Free shipping over $150. Free 30-day returns. Members receive restock
