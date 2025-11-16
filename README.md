@@ -1,135 +1,60 @@
-<a href="https://next-starter-skolaczk.vercel.app/">
-<img src="/public/opengraph-image.jpg" alt="thumbnail">
-</a>
-<p align="center">
-  <a href="#-features"><strong>Features</strong></a> ·
-  <a href="#-deployment"><strong>Deployment</strong></a> ·
-  <a href="#-getting-started"><strong>Getting started</strong></a> ·
-  <a href="#%EF%B8%8F-scripts-overview"><strong>Scripts overview</strong></a> ·
-  <a href="#-contribution"><strong>Contribution</strong></a> ·
-  <a href="#%EF%B8%8F-support"><strong>Support</strong></a>
-</p>
+# Kimi Store Shoes 2025
 
-## 🎉 Features
-- 🚀 Next.js 15 (App router)
-- ⚛️ React 19
-- 📘 Typescript
-- 🎨 Tailwind CSS 4 - Class sorting, merging and linting
-- 🛠️ Shadcn/ui - Customizable UI components
-- 💵 Stripe - Payment handler
-- 🔒 Next-auth - Easy authentication library for Next.js (GitHub provider)
-- 🛡️ Drizzle - ORM for node.js
-- 🔍 Zod - Schema validation library
-- 🧪 Jest & React Testing Library - Configured for unit testing
-- 🎭 Playwright - Configured for e2e testing
-- 📈 Absolute Import & Path Alias - Import components using `@/` prefix
-- 💅 Prettier - Code formatter
-- 🧹 Eslint - Code linting tool
-- 🐶 Husky & Lint Staged - Run scripts on your staged files before they are committed
-- 🔹 Icons - From Lucide
-- 🌑 Dark mode - With next-themes
-- 🤖 Github actions - Lint your code on PR
-- ⚙️ T3-env - Manage your environment variables
-- 🗺️ Sitemap & robots.txt
-- 💯 Perfect Lighthouse score
-- 💾 Neon database
-- 🌐 I18n with next-intl
+A fully scaffolded multilingual Next.js 15 experience showcasing the entire Kimi Store Shoes sitemap—from the public storefront (men/women collections, blog, cart, checkout, CMS pages) to the secure admin workspace for internal merchandising teams.
 
-## 🚀 Deployment
-Easily deploy your Next.js app with <a href="https://vercel.com/">Vercel</a> by clicking the button below:
+## 🗺️ Storefront sitemap coverage
+- **Home** hero with curated navigation, category tiles, blog teasers, and wishlist/account CTAs.
+- **Men shoes** (`/men`) with Sneakers, Running, Sandals subpages (`/men/[category]`).
+- **Women shoes** (`/women`) with Lifestyle, Training, Heels subpages (`/women/[category]`).
+- **Merchandising flows:** New Arrivals, Sale, Product Details (`/products/[slug]`).
+- **Content hub:** Blog listing + dynamic article pages, About, Contact, FAQ.
+- **Commerce flow:** Wishlist, Cart, Checkout, Account Login/Registration, Account Dashboard (order tracking).
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Skolaczk/next-starter)
+## �️ Admin dashboard sitemap
+- **Admin login** (`/admin/login`) with OTP mock form.
+- **Dashboard overview** (`/admin`).
+- **Management modules:** Products, Categories, Orders, Customers, Blog, CMS Pages, Discounts, Admin Users.
 
-## 🎯 Getting started
-### 1. Clone this template in one of three ways
+Each admin module uses shared UI that highlights current metrics, CTA buttons, and placeholder workflow cards ready to be wired to live data sources.
 
-1. Using this repository as template
+## ⚙️ Tech stack
+- Next.js 15 (App Router) + React 19
+- TypeScript + ESLint + Prettier
+- Tailwind CSS 4 utility classes
+- next-intl for locale-aware routing (`/en`, `/ms`)
+- next-auth scaffolding (GitHub provider in place)
+- Shadcn button primitives, Lucide icons
+- Jest + Testing Library, Playwright for E2E
+- Drizzle ORM + Neon-ready config, Stripe SDK hooks
 
-   ![use-this-template-button](https://github.com/Skolaczk/next-starter/assets/76774237/f25c9a29-41de-4865-aa38-c032b9346169)
-
-2. Using `create-next-app`
-
-   ```bash
-   npx create-next-app -e https://github.com/Skolaczk/next-starter my-project-name
-   ```
-
-3. Using `git clone`
-
-   ```bash
-   git clone https://github.com/Skolaczk/next-starter my-project-name
-   ```
-### 2. Install dependencies
-
+## 🚀 Getting started
 ```bash
 npm install
-```
-
-### 3. Set up environment variables
-Create `.env` file and set env variables from `.env.example` file.
-
-### 4. Prepare husky
-It is required if you want husky to work
-
-```bash
-npm run prepare
-```
-
-### 5. Run the dev server
-
-You can start the server using this command:
-
-```bash
 npm run dev
 ```
+Open `http://localhost:3000/en` (or `/ms`) to browse the storefront. Admin routes live under `/en/admin`.
 
-and open http://localhost:3000/ to see this app.
+Add environment variables by copying `.env.example` → `.env` and filling the values required by `src/env.mjs` (Stripe keys, NextAuth secrets, etc.).
 
-## 📁 Project structure
+## 🧪 Quality checks
+Run whichever checks you need before shipping:
+- `npm run lint`
+- `npm run test`
+- `npm run e2e`
 
-```bash
-.
-├── .github                         # GitHub folder
-├── .husky                          # Husky configuration
-├── prisma                          # Prisma schema and migrations
-├── public                          # Public assets folder
-└── src
-    ├── __tests__                   # Unit and e2e tests
-    ├── actions                     # Server actions
-    ├── app                         # Next JS App (App Router)
-    ├── components                  # React components
-    ├── lib                         # Functions and utilities
-    ├── styles                      # Styles folder
-    └── env.mjs                     # Env variables config file
+## 📁 Notable paths
+```
+src/app/[locale]/(storefront)  # All user-facing pages and route groups
+src/app/[locale]/(admin)/admin # Admin layout, login, and management modules
+src/lib/data/storefront.ts     # Source of truth for categories, products, blog, CMS copy, admin metrics
+src/components/admin-module-template.tsx # Reusable admin module UI shell
 ```
 
-## ⚙️ Scripts overview
-The following scripts are available in the `package.json`:
-- `dev`: Run development server
-- `build`: Build the app
-- `start`: Run production server
-- `preview`: Run `build` and `start` commands together
-- `lint`: Lint the code using Eslint
-- `lint:fix`: Fix linting errors
-- `format:check`: Checks the code for proper formatting
-- `format:write`: Fix formatting issues
-- `typecheck`: Type-check TypeScript without emitting files
-- `test`: Run unit tests
-- `test:watch`: Run unit tests in watch mode
-- `e2e`: Run end-to-end tests
-- `e2e:ui`: Run end-to-end tests with UI
-- `postbuild`: Generate sitemap
-- `prepare`: Install Husky for managing Git hooks
+## 📌 Roadmap ideas
+- Hook product/category data to Drizzle models and Stripe inventory webhooks.
+- Replace placeholder checkout and login flows with real server actions.
+- Expand localization strings beyond `home` namespace for full Malay support.
+- Connect admin modules to role-based auth and live analytics.
 
-## 🤝 Contribution
-To contribute, please follow these steps:
-1. Fork the repository.
-2. Create a new branch.
-3. Make your changes, and commit them.
-4. Push your changes to the forked repository.
-5. Create a pull request.
-
-## ❤️ Support
-
-If you liked the project, I will appreciate if you leave a star. 🌟😊
-
-Made by <a href="https://michalskolak.netlify.app/">Michał Skolak</a> 
+---
+Crafted for the "Kimi Store Shoes 2025" brief. PRs and feedback welcome! ✨

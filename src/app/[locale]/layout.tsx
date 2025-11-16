@@ -60,7 +60,7 @@ const RootLayout = async ({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={cn("min-h-screen font-sans", fonts)}>
+      <body className={cn("h-dvh overflow-y-auto font-sans", fonts)}>
         <NextIntlClientProvider>
           <ThemeProvider attribute="class">
             {children}
