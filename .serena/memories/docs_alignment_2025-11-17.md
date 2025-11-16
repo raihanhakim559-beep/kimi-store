@@ -1,0 +1,1 @@
+Checkout & Stripe TODO from docs is now satisfied: checkout page uses live cart data, createCheckoutSession builds Stripe Checkout Session + order snapshot, and webhook finalizes paid/expired states while clearing carts. Admin CRUD/search and storefront polish remain outstanding.
