@@ -28,7 +28,6 @@
 - 🐶 Husky & Lint Staged - Run scripts on your staged files before they are committed
 - 🔹 Icons - From Lucide
 - 🌑 Dark mode - With next-themes
-- 📝 Commitlint - Lint your git commits
 - 🤖 Github actions - Lint your code on PR
 - ⚙️ T3-env - Manage your environment variables
 - 🗺️ Sitemap & robots.txt

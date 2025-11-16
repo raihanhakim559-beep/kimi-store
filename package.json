@@ -50,8 +50,6 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4",
