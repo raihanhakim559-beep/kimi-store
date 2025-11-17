@@ -6,6 +6,7 @@ import { AuthControls } from "@/components/auth-controls";
 
 jest.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "en",
 }));
 
 jest.mock("@/i18n/navigation", () => ({
@@ -34,7 +35,7 @@ describe("AuthControls", () => {
   it("shows a sign-in action when no session is present", () => {
     render(<AuthControls session={null} />);
 
-    expect(screen.getByRole("button", { name: /signIn/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /signIn/i })).toBeInTheDocument();
   });
 
   it("displays the user's name when authenticated", () => {

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { createCheckoutSession } from "@/actions/checkout";
+import { ActivationRequiredPrompt } from "@/components/activation-required-prompt";
 import { buttonVariants } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 import { getCartSummary } from "@/lib/cart";
 import { checkoutSteps } from "@/lib/data/storefront";
 
@@ -19,14 +21,20 @@ type CheckoutPageProps = {
 
 const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   const locale = params?.locale ?? "en";
+  const session = await auth();
   const { cart, items, totals } = await getCartSummary();
 
   if (items.length === 0) {
     redirect(`/${locale}/cart`);
   }
 
+  if (!session?.user?.id) {
+    redirect(`/${locale}/account/login`);
+  }
+
   const currency = cart?.currency ?? "USD";
   const discountValue = cart?.discountTotal ?? 0;
+  const requiresActivation = !session.user.isActive;
 
   const hasSuccessState = searchParams?.success === "1";
   const hasCancelState = searchParams?.cancelled === "1";
@@ -163,18 +171,25 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
               <span>{formatMoney(totals.total, currency)}</span>
             </div>
           </div>
-          <form action={createCheckoutSession} className="space-y-2">
-            <input type="hidden" name="locale" value={locale} />
-            <button
-              className={buttonVariants({ size: "lg", className: "w-full" })}
-            >
-              Confirm &amp; pay {formatMoney(totals.total, currency)}
-            </button>
-            <p className="text-muted-foreground text-xs">
-              By placing an order you agree to the terms, privacy policy, and
-              Stripe checkout conditions.
-            </p>
-          </form>
+          {requiresActivation ? (
+            <ActivationRequiredPrompt
+              locale={locale}
+              totalLabel={formatMoney(totals.total, currency)}
+            />
+          ) : (
+            <form action={createCheckoutSession} className="space-y-2">
+              <input type="hidden" name="locale" value={locale} />
+              <button
+                className={buttonVariants({ size: "lg", className: "w-full" })}
+              >
+                Confirm &amp; pay {formatMoney(totals.total, currency)}
+              </button>
+              <p className="text-muted-foreground text-xs">
+                By placing an order you agree to the terms, privacy policy, and
+                Stripe checkout conditions.
+              </p>
+            </form>
+          )}
         </aside>
       </div>
     </div>

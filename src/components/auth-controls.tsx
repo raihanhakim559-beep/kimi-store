@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Session } from "next-auth";
-import { signIn, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -33,12 +33,9 @@ export const AuthControls = ({ session }: AuthControlsProps) => {
 
   if (!session?.user) {
     return (
-      <button
-        className={buttonVariants({ size: "sm" })}
-        onClick={() => signIn(undefined, { callbackUrl: "/account/dashboard" })}
-      >
+      <Link href="/account/login" className={buttonVariants({ size: "sm" })}>
         {t("signIn")}
-      </button>
+      </Link>
     );
   }
 

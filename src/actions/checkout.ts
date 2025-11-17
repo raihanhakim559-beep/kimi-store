@@ -24,6 +24,13 @@ export const createCheckoutSession = async (formData: FormData) => {
       : "en";
 
   const session = await auth();
+  if (!session?.user?.id) {
+    redirect(`/${locale}/account/login`);
+  }
+
+  if (!session.user.isActive) {
+    redirect(`/${locale}/account/profile?activation=1`);
+  }
   const { cart, items, totals } = await getCartSummary();
 
   if (!cart || items.length === 0) {

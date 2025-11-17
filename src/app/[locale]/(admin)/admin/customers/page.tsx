@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 
-import { updateCustomerStatus } from "@/actions/admin/customers";
+import {
+  resendCustomerActivationEmail,
+  updateCustomerStatus,
+} from "@/actions/admin/customers";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminCustomers } from "@/lib/data/admin";
@@ -190,6 +193,7 @@ const AdminCustomersPage = async ({
                     <th className="py-2 pr-4 text-left">Status</th>
                     <th className="py-2 pr-4 text-left">Orders</th>
                     <th className="py-2 pr-4 text-left">Lifetime value</th>
+                    <th className="py-2 pr-4 text-left">Activation</th>
                     <th className="py-2 pr-4 text-left">Last order</th>
                     <th className="py-2 pr-4 text-right">Actions</th>
                   </tr>
@@ -229,6 +233,24 @@ const AdminCustomersPage = async ({
                         <td className="py-3 pr-4 align-top text-slate-200">
                           {formatMoney(customer.totalSpent)}
                         </td>
+                        <td className="py-3 pr-4 align-top text-slate-200">
+                          <p className="font-semibold">
+                            {customer.activation.emailsSent > 0
+                              ? `${customer.activation.emailsSent} send${customer.activation.emailsSent === 1 ? "" : "s"}`
+                              : "No outreach"}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {customer.activation.lastEmailAt
+                              ? `Last email ${formatDate(customer.activation.lastEmailAt)}`
+                              : "Awaiting first invite"}
+                          </p>
+                          {customer.activation.completedAt && (
+                            <p className="text-xs text-emerald-300">
+                              Completed{" "}
+                              {formatDate(customer.activation.completedAt)}
+                            </p>
+                          )}
+                        </td>
                         <td className="py-3 pr-4 align-top text-slate-300">
                           {formatDate(customer.lastOrderAt)}
                         </td>
@@ -248,6 +270,11 @@ const AdminCustomersPage = async ({
                               name="isActive"
                               value={targetStatus}
                             />
+                            <input
+                              type="hidden"
+                              name="reason"
+                              value="Admin dashboard toggle"
+                            />
                             <button
                               className={buttonVariants({
                                 variant: customer.isActive
@@ -262,6 +289,33 @@ const AdminCustomersPage = async ({
                               {customer.isActive ? "Deactivate" : "Activate"}
                             </button>
                           </form>
+                          {!customer.isActive && (
+                            <form
+                              action={resendCustomerActivationEmail}
+                              className="space-y-2"
+                            >
+                              <input
+                                type="hidden"
+                                name="locale"
+                                value={locale}
+                              />
+                              <input
+                                type="hidden"
+                                name="customerId"
+                                value={customer.id}
+                              />
+                              <button
+                                className={buttonVariants({
+                                  variant: "ghost",
+                                  size: "sm",
+                                  className:
+                                    "w-full border border-white/20 text-white",
+                                })}
+                              >
+                                Resend activation
+                              </button>
+                            </form>
+                          )}
                         </td>
                       </tr>
                     );

@@ -1,6 +1,6 @@
 {
-  "id": "fa698ac4-9edb-4120-8f42-3e94bc9ffeb7",
-  "prevId": "707b70ac-0aa9-4c91-b487-4c03d7beee68",
+  "id": "6d9f1e79-0ab7-4f0f-a94e-0f561d34b5ab",
+  "prevId": "872de17a-f635-4d97-a8b1-f07532159c08",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -80,6 +80,72 @@
         "account_userId_user_id_fk": {
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.activation_event": {
+      "name": "activation_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eventType": {
+          "name": "eventType",
+          "type": "activation_event_type",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activation_event_user_idx": {
+          "name": "activation_event_user_idx",
+          "columns": [
+            "userId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "activation_event_user_fk": {
+          "name": "activation_event_user_fk",
+          "tableFrom": "activation_event",
           "tableTo": "user",
           "columnsFrom": [
             "userId"
@@ -1877,6 +1943,17 @@
     }
   },
   "enums": {
+    "public.activation_event_type": {
+      "name": "activation_event_type",
+      "schema": "public",
+      "values": [
+        "activation_invite",
+        "activation_reminder",
+        "activation_completed",
+        "activation_override_activate",
+        "activation_override_deactivate"
+      ]
+    },
     "public.cart_status": {
       "name": "cart_status",
       "schema": "public",

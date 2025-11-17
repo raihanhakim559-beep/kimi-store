@@ -1,5 +1,9 @@
 import { and, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 
+import {
+  type ActivationEventSummary,
+  getActivationEventsForUsers,
+} from "@/lib/activation-events";
 import { blogPosts, cmsPages } from "@/lib/data/storefront";
 import {
   categories,
@@ -699,6 +703,16 @@ type AdminCustomerFilters = {
   limit?: number;
 };
 
+export type ActivationStats = {
+  emailsSent: number;
+  remindersSent: number;
+  lastEmailAt: Date | null;
+  lastEventAt: Date | null;
+  lastEventType: ActivationEventSummary["eventType"] | null;
+  completedAt: Date | null;
+  firstInviteAt: Date | null;
+};
+
 export type AdminCustomerRow = {
   id: string;
   name: string | null;
@@ -708,9 +722,75 @@ export type AdminCustomerRow = {
   orderCount: number;
   totalSpent: number;
   lastOrderAt: Date | null;
+  activation: ActivationStats;
 };
 
 const lastInteractionExpr = sql<Date | null>`coalesce(max(${orders.placedAt}), max(${orders.updatedAt}), max(${users.emailVerified}))`;
+
+const createEmptyActivationStats = (): ActivationStats => ({
+  emailsSent: 0,
+  remindersSent: 0,
+  lastEmailAt: null,
+  lastEventAt: null,
+  lastEventType: null,
+  completedAt: null,
+  firstInviteAt: null,
+});
+
+const summarizeActivationEvents = (
+  events: ActivationEventSummary[],
+): ActivationStats => {
+  const summary = createEmptyActivationStats();
+
+  for (const event of events) {
+    if (!summary.lastEventAt || event.createdAt > summary.lastEventAt) {
+      summary.lastEventAt = event.createdAt;
+      summary.lastEventType = event.eventType;
+    }
+
+    if (event.eventType === "activation_invite") {
+      summary.emailsSent += 1;
+      summary.lastEmailAt = event.createdAt;
+      summary.firstInviteAt = summary.firstInviteAt ?? event.createdAt;
+    } else if (event.eventType === "activation_reminder") {
+      summary.emailsSent += 1;
+      summary.remindersSent += 1;
+      summary.lastEmailAt = event.createdAt;
+    } else if (
+      event.eventType === "activation_completed" ||
+      event.eventType === "activation_override_activate"
+    ) {
+      summary.completedAt = event.createdAt;
+    }
+  }
+
+  return summary;
+};
+
+const buildActivationStatsMap = async (userIds: string[]) => {
+  if (userIds.length === 0) {
+    return new Map<string, ActivationStats>();
+  }
+
+  const events = await getActivationEventsForUsers(userIds);
+  const grouped = new Map<string, ActivationEventSummary[]>();
+
+  for (const event of events) {
+    const bucket = grouped.get(event.userId);
+    if (bucket) {
+      bucket.push(event);
+    } else {
+      grouped.set(event.userId, [event]);
+    }
+  }
+
+  const stats = new Map<string, ActivationStats>();
+  for (const [userId, bucket] of grouped.entries()) {
+    stats.set(userId, summarizeActivationEvents(bucket));
+  }
+
+  return stats;
+};
 
 export const getAdminCustomers = async ({
   search,
@@ -766,6 +846,9 @@ export const getAdminCustomers = async ({
     .limit(limit);
 
   const rows = await (filterExpression ? query.where(filterExpression) : query);
+  const activationStatsMap = await buildActivationStatsMap(
+    rows.map((row) => row.id),
+  );
 
   return rows.map((row) => ({
     id: row.id,
@@ -776,5 +859,6 @@ export const getAdminCustomers = async ({
     orderCount: Number(row.orderCount ?? 0),
     totalSpent: Number(row.totalSpent ?? 0),
     lastOrderAt: row.lastOrderAt ?? null,
+    activation: activationStatsMap.get(row.id) ?? createEmptyActivationStats(),
   }));
 };

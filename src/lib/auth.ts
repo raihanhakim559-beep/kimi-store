@@ -9,6 +9,7 @@ import GoogleProvider from "next-auth/providers/google";
 
 import { env } from "@/env.mjs";
 import { isAuthProviderEnabled } from "@/lib/auth/provider-config";
+import { sendActivationEmail } from "@/lib/email/send-activation-email";
 import { db, users } from "@/lib/schema";
 import { stripeServer } from "@/lib/stripe";
 
@@ -47,6 +48,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       session.user.id = user.id;
       session.user.stripeCustomerId = user.stripeCustomerId;
       session.user.isActive = user.isActive;
+      session.user.phone = user.phone;
+      session.user.hasAcceptedTerms = user.hasAcceptedTerms;
 
       return session;
     },
@@ -55,17 +58,34 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     createUser: async ({ user }) => {
       if (!user.email || !user.name) return;
 
-      await stripeServer.customers
-        .create({
+      let stripeCustomerId: string | null = null;
+      try {
+        const customer = await stripeServer.customers.create({
           email: user.email,
           name: user.name,
-        })
-        .then(async (customer) =>
-          db
-            .update(users)
-            .set({ stripeCustomerId: customer.id })
-            .where(eq(users.id, user.id!)),
-        );
+        });
+        stripeCustomerId = customer.id;
+      } catch (error) {
+        console.error("Failed to create Stripe customer", error);
+      }
+
+      if (stripeCustomerId) {
+        await db
+          .update(users)
+          .set({ stripeCustomerId })
+          .where(eq(users.id, user.id!));
+      }
+
+      try {
+        await sendActivationEmail({
+          userId: user.id!,
+          email: user.email,
+          name: user.name,
+          channel: "invite",
+        });
+      } catch (error) {
+        console.error("Failed to send activation email", error);
+      }
     },
   },
 });

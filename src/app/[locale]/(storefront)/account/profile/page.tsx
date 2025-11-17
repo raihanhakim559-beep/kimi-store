@@ -1,11 +1,13 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
+import { updateProfileAddress, updateProfileDetails } from "@/actions/profile";
+import { ResendVerificationButton } from "@/components/resend-verification-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
-import { accounts, db, users } from "@/lib/schema";
+import { accounts, addresses, db, users } from "@/lib/schema";
 
 const formatDateTime = (value?: Date | null) => {
   if (!value) {
@@ -34,11 +36,16 @@ const getInitials = (name?: string | null, email?: string | null) => {
   return "?";
 };
 
-const AccountProfilePage = async () => {
+type AccountProfilePageProps = {
+  params: Promise<{ locale?: string }>;
+};
+
+const AccountProfilePage = async ({ params }: AccountProfilePageProps) => {
+  const { locale = "en" } = await params;
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect("/account/login");
+    redirect(`/${locale}/account/login`);
   }
 
   const userId = session.user.id;
@@ -49,16 +56,19 @@ const AccountProfilePage = async () => {
       name: users.name,
       email: users.email,
       image: users.image,
+      phone: users.phone,
       emailVerified: users.emailVerified,
       stripeCustomerId: users.stripeCustomerId,
       isActive: users.isActive,
+      hasAcceptedTerms: users.hasAcceptedTerms,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
 
   if (!userRecord) {
-    redirect("/account/login");
+    redirect(`/${locale}/account/login`);
   }
 
   const providerAccounts = await db
@@ -69,12 +79,33 @@ const AccountProfilePage = async () => {
     .from(accounts)
     .where(eq(accounts.userId, userId));
 
+  const [primaryAddress] = await db
+    .select({
+      id: addresses.id,
+      fullName: addresses.fullName,
+      phone: addresses.phone,
+      line1: addresses.line1,
+      line2: addresses.line2,
+      city: addresses.city,
+      state: addresses.state,
+      postalCode: addresses.postalCode,
+      country: addresses.country,
+    })
+    .from(addresses)
+    .where(eq(addresses.userId, userId))
+    .orderBy(desc(addresses.isDefaultShipping), desc(addresses.createdAt))
+    .limit(1);
+
   const initials = getInitials(userRecord.name, userRecord.email);
 
   const accountDetails = [
     { label: "User ID", value: userRecord.id },
     { label: "Name", value: userRecord.name ?? "Not provided" },
     { label: "Email", value: userRecord.email ?? "Not provided" },
+    {
+      label: "Phone",
+      value: userRecord.phone ?? primaryAddress?.phone ?? "Not provided",
+    },
     {
       label: "Email verified",
       value: formatDateTime(userRecord.emailVerified),
@@ -86,6 +117,16 @@ const AccountProfilePage = async () => {
     {
       label: "Membership status",
       value: userRecord.isActive ? "Active" : "Inactive",
+    },
+    {
+      label: "Onboarding completed",
+      value: userRecord.onboardingCompletedAt
+        ? formatDateTime(userRecord.onboardingCompletedAt)
+        : "Pending",
+    },
+    {
+      label: "Terms accepted",
+      value: userRecord.hasAcceptedTerms ? "Yes" : "No",
     },
   ];
 
@@ -121,12 +162,12 @@ const AccountProfilePage = async () => {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/account/dashboard"
+              href={`/${locale}/account/dashboard`}
               className={buttonVariants({ variant: "outline" })}
             >
               Go to dashboard
             </Link>
-            <Link href="/wishlist" className={buttonVariants({})}>
+            <Link href={`/${locale}/wishlist`} className={buttonVariants({})}>
               View wishlist
             </Link>
           </div>
@@ -153,6 +194,11 @@ const AccountProfilePage = async () => {
             <p className="text-muted-foreground text-xs">
               {formatDateTime(userRecord.emailVerified)}
             </p>
+            {!userRecord.emailVerified && (
+              <div className="mt-3">
+                <ResendVerificationButton locale={locale} />
+              </div>
+            )}
           </div>
           <div className="rounded-2xl border p-4">
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
@@ -200,6 +246,136 @@ const AccountProfilePage = async () => {
             )}
           </ul>
         </article>
+      </section>
+      <section className="grid gap-6 md:grid-cols-2">
+        <form
+          action={updateProfileDetails}
+          className="space-y-4 rounded-2xl border p-6"
+        >
+          <input type="hidden" name="locale" value={locale} />
+          <h2 className="text-xl font-semibold">Profile settings</h2>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Display name</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="name"
+              defaultValue={userRecord.name ?? ""}
+              required
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Phone</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="phone"
+              defaultValue={userRecord.phone ?? ""}
+              required
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Profile photo URL</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="image"
+              defaultValue={userRecord.image ?? ""}
+              placeholder="https://..."
+            />
+          </label>
+          <button className={buttonVariants({ className: "w-full" })}>
+            Save profile
+          </button>
+        </form>
+        <form
+          action={updateProfileAddress}
+          className="space-y-4 rounded-2xl border p-6"
+        >
+          <input type="hidden" name="locale" value={locale} />
+          <h2 className="text-xl font-semibold">Default address</h2>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Recipient name</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="fullName"
+              defaultValue={primaryAddress?.fullName ?? userRecord.name ?? ""}
+              required
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Phone</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="phone"
+              defaultValue={primaryAddress?.phone ?? userRecord.phone ?? ""}
+              required
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Address line 1</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="line1"
+              defaultValue={primaryAddress?.line1 ?? ""}
+              required
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Address line 2</span>
+            <input
+              className="w-full rounded-2xl border px-4 py-3 text-sm"
+              name="line2"
+              defaultValue={primaryAddress?.line2 ?? ""}
+            />
+          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">City</span>
+              <input
+                className="w-full rounded-2xl border px-4 py-3 text-sm"
+                name="city"
+                defaultValue={primaryAddress?.city ?? ""}
+                required
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">State / Region</span>
+              <input
+                className="w-full rounded-2xl border px-4 py-3 text-sm"
+                name="state"
+                defaultValue={primaryAddress?.state ?? ""}
+                required
+              />
+            </label>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Postal code</span>
+              <input
+                className="w-full rounded-2xl border px-4 py-3 text-sm"
+                name="postalCode"
+                defaultValue={primaryAddress?.postalCode ?? ""}
+                required
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Country</span>
+              <input
+                className="w-full rounded-2xl border px-4 py-3 text-sm"
+                name="country"
+                defaultValue={primaryAddress?.country ?? "MY"}
+                maxLength={2}
+                required
+              />
+            </label>
+          </div>
+          <button
+            className={buttonVariants({
+              className: "w-full",
+              variant: "secondary",
+            })}
+          >
+            Save address
+          </button>
+        </form>
       </section>
     </div>
   );

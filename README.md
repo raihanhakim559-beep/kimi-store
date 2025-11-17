@@ -36,6 +36,18 @@ Open `http://localhost:3000/en` (or `/ms`) to browse the storefront. Admin route
 
 Add environment variables by copying `.env.example` → `.env` and filling the values required by `src/env.mjs` (Stripe keys, NextAuth secrets, etc.).
 
+### 🔔 Activation CRM automation
+- Every activation email, reminder, override, and completion is tracked in the `activation_event` table so the admin Customers module displays outreach counts and timestamps.
+- Configure the protected reminder endpoint to keep inactive users warm:
+
+```bash
+curl -X POST \
+	-H "Authorization: Bearer $ONBOARDING_CRON_SECRET" \
+	"${APP_URL}/api/internal/onboarding-reminders"
+```
+
+Trigger it via your scheduler (Vercel Cron, GitHub Actions, etc.) every few hours. A `24h` reminder fires once the first invite is at least a day old, and a `72h` reminder goes out three days later. Set `ONBOARDING_CRON_SECRET` to guard the route.
+
 ## 🧪 Quality checks
 Run whichever checks you need before shipping:
 - `npm run lint`

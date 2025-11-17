@@ -24,8 +24,31 @@ export const users = pgTable("user", {
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
+  phone: text("phone"),
   stripeCustomerId: text("stripeCustomerId").unique(),
   isActive: boolean("isActive").default(false).notNull(),
+  hasAcceptedTerms: boolean("hasAcceptedTerms").default(false).notNull(),
+  onboardingCompletedAt: timestamp("onboardingCompletedAt", { mode: "date" }),
+});
+
+export const activationEventTypeEnum = pgEnum("activation_event_type", [
+  "activation_invite",
+  "activation_reminder",
+  "activation_completed",
+  "activation_override_activate",
+  "activation_override_deactivate",
+]);
+
+export const activationEvents = pgTable("activation_event", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  eventType: activationEventTypeEnum("eventType").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const accounts = pgTable(
