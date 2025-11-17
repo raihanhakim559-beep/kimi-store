@@ -12,8 +12,8 @@ const moneyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 type SearchPageProps = {
-  params?: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params?: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const getQueryParam = (value?: string | string[]): string =>
@@ -22,7 +22,8 @@ const getQueryParam = (value?: string | string[]): string =>
 export async function generateMetadata({
   searchParams,
 }: SearchPageProps): Promise<Metadata> {
-  const query = getQueryParam(searchParams?.query);
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const query = getQueryParam(resolvedSearchParams.query);
   const baseTitle = "Search Kimi Store Shoes";
 
   if (!query) {
@@ -40,7 +41,8 @@ export async function generateMetadata({
 }
 
 const SearchPage = async ({ searchParams }: SearchPageProps) => {
-  const query = getQueryParam(searchParams?.query).trim();
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const query = getQueryParam(resolvedSearchParams.query).trim();
   const results = query ? await searchProducts(query, 60) : [];
 
   return (

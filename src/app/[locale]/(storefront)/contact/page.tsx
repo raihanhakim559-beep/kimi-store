@@ -1,8 +1,16 @@
 import { ContactForm } from "@/components/contact-form";
-import { cmsPages } from "@/lib/data/storefront";
+import { routing } from "@/i18n/routing";
+import { getContactContent } from "@/lib/data/storefront";
+import { type Locale } from "@/lib/i18n/copy";
 
-const ContactPage = () => {
-  const contact = cmsPages.contact;
+type ContactPageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+const ContactPage = async ({ params }: ContactPageProps) => {
+  const resolvedParams = await params;
+  const locale = (resolvedParams?.locale ?? routing.defaultLocale) as Locale;
+  const contact = await getContactContent(locale);
 
   return (
     <div className="space-y-10">

@@ -156,8 +156,8 @@ const StorefrontLayout = async ({ children }: { children: ReactNode }) => {
               <Link href="/faq" className="hover:text-foreground">
                 Shipping & returns
               </Link>
-              <Link href="/account" className="hover:text-foreground">
-                Account
+              <Link href="/account/dashboard" className="hover:text-foreground">
+                Dashboard
               </Link>
               <Link href="/blog" className="hover:text-foreground">
                 Journal

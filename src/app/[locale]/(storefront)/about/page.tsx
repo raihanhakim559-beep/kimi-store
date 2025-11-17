@@ -6,13 +6,14 @@ import { getAboutContent } from "@/lib/data/storefront";
 import { type Locale } from "@/lib/i18n/copy";
 
 type AboutPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export async function generateMetadata({
   params,
 }: AboutPageProps): Promise<Metadata> {
-  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+  const resolvedParams = await params;
+  const locale = (resolvedParams?.locale ?? routing.defaultLocale) as Locale;
   const seo = getSeoMeta("about", locale);
 
   return {
@@ -21,9 +22,10 @@ export async function generateMetadata({
   };
 }
 
-const AboutPage = ({ params }: AboutPageProps) => {
-  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
-  const aboutContent = getAboutContent(locale);
+const AboutPage = async ({ params }: AboutPageProps) => {
+  const resolvedParams = await params;
+  const locale = (resolvedParams?.locale ?? routing.defaultLocale) as Locale;
+  const aboutContent = await getAboutContent(locale);
 
   return (
     <div className="space-y-10">

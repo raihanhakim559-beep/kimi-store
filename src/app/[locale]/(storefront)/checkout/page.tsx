@@ -15,12 +15,13 @@ const formatMoney = (amountInCents: number, currency: string) =>
   }).format(amountInCents / 100);
 
 type CheckoutPageProps = {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
-  const locale = params?.locale ?? "en";
+  const { locale } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const session = await auth();
   const { cart, items, totals } = await getCartSummary();
 
@@ -36,8 +37,8 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   const discountValue = cart?.discountTotal ?? 0;
   const requiresActivation = !session.user.isActive;
 
-  const hasSuccessState = searchParams?.success === "1";
-  const hasCancelState = searchParams?.cancelled === "1";
+  const hasSuccessState = resolvedSearchParams?.success === "1";
+  const hasCancelState = resolvedSearchParams?.cancelled === "1";
 
   return (
     <div className="space-y-8">

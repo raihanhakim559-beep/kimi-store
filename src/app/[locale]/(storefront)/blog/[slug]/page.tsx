@@ -3,8 +3,13 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getBlogPostBySlug, getBlogPosts } from "@/lib/data/storefront";
 
-const BlogPostPage = async ({ params }: { params: { slug: string } }) => {
-  const post = await getBlogPostBySlug(params.slug);
+type BlogPostPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+const BlogPostPage = async ({ params }: BlogPostPageProps) => {
+  const { slug } = await params;
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();

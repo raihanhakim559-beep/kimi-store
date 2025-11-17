@@ -1,14 +1,18 @@
-import { and, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 
 import {
   type ActivationEventSummary,
   getActivationEventsForUsers,
 } from "@/lib/activation-events";
-import { cmsPages } from "@/lib/data/storefront";
 import {
+  adminUsersTable,
   blogPostsTable,
   categories,
+  cmsPageSections,
+  cmsPagesTable,
   db,
+  type JsonMap,
+  type LocaleCopy,
   orderItems,
   orders,
   products,
@@ -402,7 +406,7 @@ export const getAdminBlogPosts = async ({
   }));
 };
 
-type AdminCmsStatus = "draft" | "published";
+type AdminCmsStatus = "draft" | "published" | "archived";
 
 type AdminCmsFilters = {
   search?: string | null;
@@ -410,10 +414,8 @@ type AdminCmsFilters = {
   limit?: number;
 };
 
-type CmsPageSlug = "about" | "contact" | "faq";
-
 export type AdminCmsPageRow = {
-  slug: CmsPageSlug;
+  slug: string;
   title: string;
   status: AdminCmsStatus;
   owner: string;
@@ -422,59 +424,119 @@ export type AdminCmsPageRow = {
   summary: string;
 };
 
-const cmsPageMetadata: AdminCmsPageRow[] = [
-  {
-    slug: "about",
-    title: "About",
-    status: "published",
-    owner: "Brand Studio",
-    blocks: 1 + (cmsPages.about.pillars?.length ?? 0),
-    lastPublishedAt: new Date("2025-10-12"),
-    summary: cmsPages.about.hero,
-  },
-  {
-    slug: "contact",
-    title: "Contact",
-    status: "published",
-    owner: "CX Team",
-    blocks: cmsPages.contact.channels.length,
-    lastPublishedAt: new Date("2025-09-04"),
-    summary: cmsPages.contact.hero,
-  },
-  {
-    slug: "faq",
-    title: "FAQ",
-    status: "published",
-    owner: "CX Ops",
-    blocks: cmsPages.faq.length,
-    lastPublishedAt: new Date("2025-10-01"),
-    summary: `${cmsPages.faq.length} entries maintained by CX Ops`,
-  },
-];
-
 export const getAdminCmsPages = async ({
   search,
   status,
   limit = 25,
 }: AdminCmsFilters = {}): Promise<AdminCmsPageRow[]> => {
-  let rows = [...cmsPageMetadata];
+  const filters: SQL<unknown>[] = [];
 
-  const normalizedStatus = status && status !== "all" ? status : undefined;
+  const normalizedStatus =
+    status && status !== "all" ? (status as AdminCmsStatus) : undefined;
   if (normalizedStatus) {
-    rows = rows.filter((row) => row.status === normalizedStatus);
+    filters.push(eq(cmsPagesTable.status, normalizedStatus));
   }
 
-  const trimmed = search?.trim().toLowerCase();
+  const trimmed = search?.trim();
   if (trimmed && trimmed.length > 0) {
-    rows = rows.filter((row) =>
-      [row.title, row.owner, row.summary].some((value) =>
-        value.toLowerCase().includes(trimmed),
-      ),
+    const like = `%${trimmed}%`;
+    filters.push(
+      or(
+        ilike(cmsPagesTable.title, like),
+        ilike(cmsPagesTable.owner, like),
+        ilike(cmsPagesTable.summary, like),
+      )!,
     );
   }
 
-  rows.sort((a, b) => a.title.localeCompare(b.title));
-  return rows.slice(0, limit);
+  const query = db
+    .select({
+      slug: cmsPagesTable.slug,
+      title: cmsPagesTable.title,
+      status: cmsPagesTable.status,
+      owner: cmsPagesTable.owner,
+      summary: cmsPagesTable.summary,
+      updatedAt: cmsPagesTable.updatedAt,
+      publishedAt: cmsPagesTable.publishedAt,
+      blockCount: sql<number>`count(${cmsPageSections.id})`,
+    })
+    .from(cmsPagesTable)
+    .leftJoin(
+      cmsPageSections,
+      and(
+        eq(cmsPageSections.pageId, cmsPagesTable.id),
+        eq(cmsPageSections.isActive, true),
+      ),
+    )
+    .groupBy(
+      cmsPagesTable.id,
+      cmsPagesTable.slug,
+      cmsPagesTable.title,
+      cmsPagesTable.status,
+      cmsPagesTable.owner,
+      cmsPagesTable.summary,
+      cmsPagesTable.publishedAt,
+      cmsPagesTable.updatedAt,
+    )
+    .orderBy(desc(cmsPagesTable.updatedAt), desc(cmsPagesTable.publishedAt));
+
+  const filterExpression =
+    filters.length === 0
+      ? null
+      : filters.length === 1
+        ? filters[0]!
+        : and(filters[0]!, filters[1]!, ...filters.slice(2));
+
+  const rows = await (
+    filterExpression ? query.where(filterExpression) : query
+  ).limit(limit);
+
+  return rows.map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    status: row.status as AdminCmsStatus,
+    owner: row.owner ?? "Unassigned",
+    blocks: Number(row.blockCount ?? 0),
+    lastPublishedAt: row.publishedAt ?? row.updatedAt ?? new Date(),
+    summary: row.summary ?? "",
+  }));
+};
+
+export type AdminCmsSectionRow = {
+  id: string;
+  pageSlug: string;
+  pageTitle: string;
+  sectionType: typeof cmsPageSections.$inferSelect.sectionType;
+  title: LocaleCopy | null;
+  body: LocaleCopy | null;
+  metadata: JsonMap | null;
+  position: number;
+  isActive: boolean;
+};
+
+export const getAdminCmsSections = async (
+  slug: string,
+): Promise<AdminCmsSectionRow[]> => {
+  const rows = await db
+    .select({
+      id: cmsPageSections.id,
+      pageSlug: cmsPagesTable.slug,
+      pageTitle: cmsPagesTable.title,
+      sectionType: cmsPageSections.sectionType,
+      title: cmsPageSections.title,
+      body: cmsPageSections.body,
+      metadata: cmsPageSections.metadata,
+      position: cmsPageSections.position,
+      isActive: cmsPageSections.isActive,
+    })
+    .from(cmsPageSections)
+    .innerJoin(cmsPagesTable, eq(cmsPageSections.pageId, cmsPagesTable.id))
+    .where(
+      and(eq(cmsPagesTable.slug, slug), eq(cmsPageSections.isActive, true)),
+    )
+    .orderBy(asc(cmsPageSections.position), desc(cmsPageSections.updatedAt));
+
+  return rows;
 };
 
 type AdminDiscountStatus = "active" | "scheduled" | "expired" | "inactive";
@@ -605,62 +667,11 @@ export type AdminUserRow = {
   role: AdminTeamRole;
   status: AdminUserStatus;
   lastLoginAt: Date | null;
-  location: string;
+  location: string | null;
   mfaEnabled: boolean;
   teams: string[];
-  invitedAt: Date;
+  invitedAt: Date | null;
 };
-
-const adminTeamDirectory: AdminUserRow[] = [
-  {
-    id: "ops-lead",
-    name: "Maya Santiago",
-    email: "maya@kimistore.com",
-    role: "owner",
-    status: "active",
-    lastLoginAt: new Date("2025-11-16T09:10:00Z"),
-    location: "New York, USA",
-    mfaEnabled: true,
-    teams: ["Operations", "Editorial"],
-    invitedAt: new Date("2023-05-01"),
-  },
-  {
-    id: "cx-lead",
-    name: "Izzati Rahman",
-    email: "izzati@kimistore.com",
-    role: "editor",
-    status: "active",
-    lastLoginAt: new Date("2025-11-15T14:30:00Z"),
-    location: "Kuala Lumpur, MY",
-    mfaEnabled: true,
-    teams: ["CX", "Loyalty"],
-    invitedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "growth-analyst",
-    name: "Lennox Parr",
-    email: "lennox@kimistore.com",
-    role: "analyst",
-    status: "pending",
-    lastLoginAt: null,
-    location: "Remote",
-    mfaEnabled: false,
-    teams: ["Growth"],
-    invitedAt: new Date("2025-11-14"),
-  },
-  {
-    id: "studio-support",
-    name: "Harper Cho",
-    email: "harper@kimistore.com",
-    role: "support",
-    status: "disabled",
-    lastLoginAt: new Date("2025-09-02T08:00:00Z"),
-    location: "Singapore",
-    mfaEnabled: false,
-    teams: ["Studio"],
-    invitedAt: new Date("2022-11-20"),
-  },
-];
 
 export const getAdminUsers = async ({
   search,
@@ -668,27 +679,55 @@ export const getAdminUsers = async ({
   status,
   limit = 25,
 }: AdminUserFilters = {}): Promise<AdminUserRow[]> => {
-  let rows = [...adminTeamDirectory];
+  const filters: SQL<unknown>[] = [];
 
   const normalizedRole = role && role !== "all" ? role : undefined;
   const normalizedStatus = status && status !== "all" ? status : undefined;
 
   if (normalizedRole) {
-    rows = rows.filter((row) => row.role === normalizedRole);
+    filters.push(eq(adminUsersTable.role, normalizedRole));
   }
 
   if (normalizedStatus) {
-    rows = rows.filter((row) => row.status === normalizedStatus);
+    filters.push(eq(adminUsersTable.status, normalizedStatus));
   }
 
-  const trimmed = search?.trim().toLowerCase();
+  const trimmed = search?.trim();
   if (trimmed && trimmed.length > 0) {
-    rows = rows.filter((row) =>
-      [row.name, row.email, row.location].some((value) =>
-        value.toLowerCase().includes(trimmed),
-      ),
+    const like = `%${trimmed}%`;
+    filters.push(
+      or(
+        ilike(adminUsersTable.name, like),
+        ilike(adminUsersTable.email, like),
+        ilike(adminUsersTable.location, like),
+      )!,
     );
   }
+
+  const query = db
+    .select({
+      id: adminUsersTable.id,
+      name: adminUsersTable.name,
+      email: adminUsersTable.email,
+      role: adminUsersTable.role,
+      status: adminUsersTable.status,
+      lastLoginAt: adminUsersTable.lastLoginAt,
+      location: adminUsersTable.location,
+      mfaEnabled: adminUsersTable.mfaEnabled,
+      teams: adminUsersTable.teams,
+      invitedAt: adminUsersTable.invitedAt,
+      updatedAt: adminUsersTable.updatedAt,
+    })
+    .from(adminUsersTable);
+
+  const filterExpression =
+    filters.length === 0
+      ? null
+      : filters.length === 1
+        ? filters[0]!
+        : and(filters[0]!, filters[1]!, ...filters.slice(2));
+
+  const rows = await (filterExpression ? query.where(filterExpression) : query);
 
   rows.sort((a, b) => {
     if (a.status === b.status) {
@@ -700,7 +739,18 @@ export const getAdminUsers = async ({
     return order.indexOf(a.status) - order.indexOf(b.status);
   });
 
-  return rows.slice(0, limit);
+  return rows.slice(0, limit).map((row) => ({
+    id: row.id,
+    name: row.name ?? "Admin",
+    email: row.email ?? "",
+    role: row.role as AdminTeamRole,
+    status: row.status as AdminUserStatus,
+    lastLoginAt: row.lastLoginAt ?? null,
+    location: row.location ?? null,
+    mfaEnabled: row.mfaEnabled,
+    teams: Array.isArray(row.teams) ? row.teams : [],
+    invitedAt: row.invitedAt ?? row.updatedAt ?? new Date(),
+  }));
 };
 
 type AdminCustomerFilters = {

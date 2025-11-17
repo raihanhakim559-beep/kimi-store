@@ -40,15 +40,8 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1768771200000,
-      "tag": "0005_resend_onboarding",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1769366400000,
-      "tag": "0006_activation_events",
+      "when": 1763358033989,
+      "tag": "0005_parched_medusa",
       "breakpoints": true
     }
   ]

@@ -8,13 +8,14 @@ import { getStorefrontCollections } from "@/lib/data/storefront";
 import { type Locale } from "@/lib/i18n/copy";
 
 type WomenShoesPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export async function generateMetadata({
   params,
 }: WomenShoesPageProps): Promise<Metadata> {
-  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+  const resolvedParams = await params;
+  const locale = (resolvedParams?.locale ?? routing.defaultLocale) as Locale;
   const seo = getSeoMeta("women", locale);
 
   return {

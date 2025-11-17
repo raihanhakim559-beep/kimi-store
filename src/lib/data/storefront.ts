@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   desc,
   eq,
   ilike,
@@ -19,9 +20,14 @@ import {
   translateCopy,
 } from "@/lib/i18n/copy";
 import {
+  adminUsersTable,
   blogPostsTable,
   categories,
+  cmsPageSections,
+  cmsPagesTable,
   db,
+  type JsonMap,
+  type LocaleCopy,
   orderItems,
   orders,
   productImages,
@@ -103,6 +109,85 @@ export type BlogPost = {
   publishedAt: string;
   minutesToRead: number;
   sections: BlogPostSection[];
+};
+
+type CmsPageRow = InferSelectModel<typeof cmsPagesTable>;
+type CmsSectionRow = InferSelectModel<typeof cmsPageSections>;
+
+const translateCmsCopy = (
+  copy: LocaleCopy | null | undefined,
+  locale: Locale,
+) => {
+  if (!copy) {
+    return "";
+  }
+
+  return (
+    copy[locale] ??
+    copy[routing.defaultLocale] ??
+    Object.values(copy).find((value) => Boolean(value)) ??
+    ""
+  );
+};
+
+const fetchCmsPageData = cache(
+  async (
+    slug: string,
+  ): Promise<{ page: CmsPageRow; sections: CmsSectionRow[] } | null> => {
+    const [page] = await db
+      .select({
+        id: cmsPagesTable.id,
+        slug: cmsPagesTable.slug,
+        title: cmsPagesTable.title,
+        label: cmsPagesTable.label,
+        hero: cmsPagesTable.hero,
+        description: cmsPagesTable.description,
+        summary: cmsPagesTable.summary,
+        owner: cmsPagesTable.owner,
+        status: cmsPagesTable.status,
+        publishedAt: cmsPagesTable.publishedAt,
+        lastEditedAt: cmsPagesTable.lastEditedAt,
+      })
+      .from(cmsPagesTable)
+      .where(eq(cmsPagesTable.slug, slug))
+      .limit(1);
+
+    if (!page) {
+      return null;
+    }
+
+    const sections = await db
+      .select({
+        id: cmsPageSections.id,
+        sectionType: cmsPageSections.sectionType,
+        key: cmsPageSections.key,
+        title: cmsPageSections.title,
+        body: cmsPageSections.body,
+        metadata: cmsPageSections.metadata,
+        position: cmsPageSections.position,
+        isActive: cmsPageSections.isActive,
+      })
+      .from(cmsPageSections)
+      .where(
+        and(
+          eq(cmsPageSections.pageId, page.id),
+          eq(cmsPageSections.isActive, true),
+        ),
+      )
+      .orderBy(asc(cmsPageSections.position), asc(cmsPageSections.id));
+
+    return { page, sections };
+  },
+);
+
+const extractCmsSectionValue = (
+  metadata: JsonMap | null | undefined,
+): string => {
+  if (!metadata || typeof metadata !== "object") {
+    return "";
+  }
+  const rawValue = (metadata as { value?: unknown }).value;
+  return typeof rawValue === "string" ? rawValue : "";
 };
 
 const normalizeBlogSections = (value: unknown): BlogPostSection[] => {
@@ -715,7 +800,7 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
     : [
         {
           id: `${productRow.id}-fallback`,
-          url: `https://images.unsplash.com/photo-1528701800489-20be3cbe2233?auto=format&fit=crop&w=900&q=80`,
+          url: `/opengraph-image.jpg`,
           alt: `${baseProduct.title} preview`,
           isPrimary: true,
         },
@@ -796,138 +881,6 @@ export const getProductReviews = cache(async (slug: string) => {
   }));
 });
 
-type LocalizedFaqEntry = {
-  question: Copy;
-  answer: Copy;
-};
-
-const faqHeroCopy = {
-  label: makeCopy({ en: "FAQ", ms: "Soalan Lazim" }),
-  title: makeCopy({
-    en: "Your top questions, answered.",
-    ms: "Soalan utama anda, kami jawab.",
-  }),
-  description: makeCopy({
-    en: "Details about shipping, returns, and care. Need more support? Tap Contact for live help.",
-    ms: "Butiran tentang penghantaran, pemulangan, dan penjagaan. Perlu bantuan lanjut? Pilih Hubungi untuk sokongan segera.",
-  }),
-};
-
-const faqEntries: LocalizedFaqEntry[] = [
-  {
-    question: makeCopy({
-      en: "What is the delivery timeline?",
-      ms: "Apakah garis masa penghantaran?",
-    }),
-    answer: makeCopy({
-      en: "Domestic orders ship within 24 hours and arrive in 2-4 business days. Express shipping is available at checkout.",
-      ms: "Pesanan dalam negara dihantar dalam masa 24 jam dan tiba dalam 2-4 hari bekerja. Penghantaran ekspres tersedia ketika pembayaran.",
-    }),
-  },
-  {
-    question: makeCopy({
-      en: "How do I start a return?",
-      ms: "Bagaimana saya memulakan pemulangan?",
-    }),
-    answer: makeCopy({
-      en: "Initiate a return through your dashboard. Print the prepaid label and drop the parcel at any courier partner within 30 days.",
-      ms: "Mulakan pemulangan melalui papan pemuka anda. Cetak label prabayar dan serahkan bungkusan di mana-mana rakan kurier dalam tempoh 30 hari.",
-    }),
-  },
-  {
-    question: makeCopy({
-      en: "Do you offer product care guides?",
-      ms: "Adakah anda menawarkan panduan penjagaan produk?",
-    }),
-    answer: makeCopy({
-      en: "Yes, every order includes a QR code linking to material-specific cleaning steps and storage tips.",
-      ms: "Ya, setiap pesanan disertakan kod QR yang memaut kepada langkah pembersihan mengikut material serta tip penyimpanan.",
-    }),
-  },
-];
-
-export const getFaqEntries = (locale: Locale): Faq[] =>
-  faqEntries.map((entry) => ({
-    question: translateCopy(entry.question, locale),
-    answer: translateCopy(entry.answer, locale),
-  }));
-
-export const getFaqContent = (locale: Locale) => ({
-  label: translateCopy(faqHeroCopy.label, locale),
-  title: translateCopy(faqHeroCopy.title, locale),
-  description: translateCopy(faqHeroCopy.description, locale),
-  entries: getFaqEntries(locale),
-});
-
-export const faqs: Faq[] = getFaqEntries(routing.defaultLocale);
-
-export const contactChannels: ContactChannel[] = [
-  {
-    label: "Customer Care",
-    value: "support@kimistore.com",
-    description: "For order updates, returns, or account assistance.",
-  },
-  {
-    label: "Flagship Studio",
-    value: "+1 (646) 555-0147",
-    description: "Mon–Sat, 9a–7p EST.",
-  },
-  {
-    label: "Press",
-    value: "press@kimistore.com",
-    description: "Collaborations, editorials, and media requests.",
-  },
-];
-
-type LocalizedAboutPillar = {
-  title: Copy;
-  detail: Copy;
-};
-
-const aboutCopy = {
-  label: makeCopy({ en: "About us", ms: "Tentang kami" }),
-  hero: makeCopy({
-    en: "We design footwear that keeps up with life in constant motion.",
-    ms: "Kami mereka kasut yang mengikuti ritma hidup yang sentiasa bergerak.",
-  }),
-  description: makeCopy({
-    en: "Kimi Store Shoes is a Malaysia-born design lab crafting products for global city life. We combine biomechanics with expressive styling to make shoes that keep up with the calendar.",
-    ms: "Kimi Store Shoes ialah makmal reka bentuk kelahiran Malaysia yang mencipta produk untuk gaya hidup bandar global. Kami menggabungkan biomekanik dengan gaya ekspresif untuk menghasilkan kasut yang seiring dengan jadual anda.",
-  }),
-  pillars: [
-    {
-      title: makeCopy({
-        en: "Human-Centered",
-        ms: "Berpusatkan Manusia",
-      }),
-      detail: makeCopy({
-        en: "Fits are drafted from 3D scans collected across three continents for inclusive sizing.",
-        ms: "Potongan dibangunkan daripada imbasan 3D yang dikumpul di tiga benua bagi memastikan saiz yang inklusif.",
-      }),
-    },
-    {
-      title: makeCopy({
-        en: "Materially Responsible",
-        ms: "Bertanggungjawab terhadap Material",
-      }),
-      detail: makeCopy({
-        en: "71% of our line uses recycled or bio-based textiles without compromising longevity.",
-        ms: "71% koleksi kami menggunakan tekstil kitar semula atau berasaskan bio tanpa menjejaskan ketahanan.",
-      }),
-    },
-    {
-      title: makeCopy({
-        en: "Service Obsessed",
-        ms: "Taksub kepada Servis",
-      }),
-      detail: makeCopy({
-        en: "We pair each launch with concierge services—text, chat, or video fittings on demand.",
-        ms: "Setiap pelancaran ditemani perkhidmatan concierge—mesej, sembang, atau sesi fitting video atas permintaan.",
-      }),
-    },
-  ] satisfies LocalizedAboutPillar[],
-};
-
 export type AboutContent = {
   label: string;
   hero: string;
@@ -935,18 +888,109 @@ export type AboutContent = {
   pillars: { title: string; detail: string }[];
 };
 
-const buildAboutContent = (locale: Locale): AboutContent => ({
-  label: translateCopy(aboutCopy.label, locale),
-  hero: translateCopy(aboutCopy.hero, locale),
-  description: translateCopy(aboutCopy.description, locale),
-  pillars: aboutCopy.pillars.map((pillar) => ({
-    title: translateCopy(pillar.title, locale),
-    detail: translateCopy(pillar.detail, locale),
-  })),
-});
+export type FaqContent = {
+  label: string;
+  title: string;
+  description: string;
+  entries: Faq[];
+};
 
-export const getAboutContent = buildAboutContent;
-export const aboutContent = buildAboutContent(routing.defaultLocale);
+export type ContactContent = {
+  hero: string;
+  channels: ContactChannel[];
+};
+
+const filterSectionsByType = (
+  sections: CmsSectionRow[],
+  type: CmsSectionRow["sectionType"],
+) =>
+  sections.filter(
+    (section) => section.sectionType === type && section.isActive,
+  );
+
+export const getFaqContent = cache(
+  async (locale: Locale): Promise<FaqContent> => {
+    const cmsData = await fetchCmsPageData("faq");
+    if (!cmsData) {
+      return {
+        label: "FAQ",
+        title: "Frequently Asked Questions",
+        description: "",
+        entries: [],
+      };
+    }
+
+    const entries = filterSectionsByType(cmsData.sections, "faq")
+      .map((section) => ({
+        question: translateCmsCopy(section.title, locale),
+        answer: translateCmsCopy(section.body, locale),
+      }))
+      .filter((entry) => entry.question || entry.answer);
+
+    return {
+      label: translateCmsCopy(cmsData.page.label, locale) || "FAQ",
+      title:
+        translateCmsCopy(cmsData.page.hero, locale) || cmsData.page.title || "",
+      description:
+        translateCmsCopy(cmsData.page.description, locale) ||
+        cmsData.page.summary ||
+        "",
+      entries,
+    };
+  },
+);
+
+export const getContactContent = cache(
+  async (locale: Locale): Promise<ContactContent> => {
+    const cmsData = await fetchCmsPageData("contact");
+    if (!cmsData) {
+      return { hero: "", channels: [] };
+    }
+
+    const channels = filterSectionsByType(cmsData.sections, "contact_channel")
+      .map((section) => ({
+        label: translateCmsCopy(section.title, locale),
+        description: translateCmsCopy(section.body, locale),
+        value: extractCmsSectionValue(section.metadata),
+      }))
+      .filter(
+        (channel) => channel.label || channel.description || channel.value,
+      );
+
+    return {
+      hero:
+        translateCmsCopy(cmsData.page.hero, locale) || cmsData.page.title || "",
+      channels,
+    };
+  },
+);
+
+export const getAboutContent = cache(
+  async (locale: Locale): Promise<AboutContent> => {
+    const cmsData = await fetchCmsPageData("about");
+    if (!cmsData) {
+      return { label: "About", hero: "", description: "", pillars: [] };
+    }
+
+    const pillars = filterSectionsByType(cmsData.sections, "pillar")
+      .map((section) => ({
+        title: translateCmsCopy(section.title, locale),
+        detail: translateCmsCopy(section.body, locale),
+      }))
+      .filter((pillar) => pillar.title || pillar.detail);
+
+    return {
+      label: translateCmsCopy(cmsData.page.label, locale) || "About",
+      hero:
+        translateCmsCopy(cmsData.page.hero, locale) || cmsData.page.title || "",
+      description:
+        translateCmsCopy(cmsData.page.description, locale) ||
+        cmsData.page.summary ||
+        "",
+      pillars,
+    };
+  },
+);
 
 export const contentNav = {
   primary: [
@@ -1113,40 +1157,66 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
 
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [productRows, categoryRows, orderRows, userRows, promoRows, blogRows] =
-    await Promise.all([
-      db
-        .select({
-          id: products.id,
-          isFeatured: products.isFeatured,
-        })
-        .from(products)
-        .where(eq(products.status, "active")),
-      db
-        .select({ id: categories.id })
-        .from(categories)
-        .where(eq(categories.isActive, true)),
-      db
-        .select({
-          id: orders.id,
-          status: orders.status,
-          fulfillmentStatus: orders.fulfillmentStatus,
-          paymentStatus: orders.paymentStatus,
-          placedAt: orders.placedAt,
-          userId: orders.userId,
-        })
-        .from(orders),
-      db.select({ id: users.id, isActive: users.isActive }).from(users),
-      db
-        .select({ id: promoCodes.id, isActive: promoCodes.isActive })
-        .from(promoCodes),
-      db
-        .select({
-          id: blogPostsTable.id,
-          status: blogPostsTable.status,
-        })
-        .from(blogPostsTable),
-    ]);
+  const [
+    productRows,
+    categoryRows,
+    orderRows,
+    userRows,
+    promoRows,
+    blogRows,
+    adminUserRows,
+    cmsPages,
+    faqSections,
+  ] = await Promise.all([
+    db
+      .select({
+        id: products.id,
+        isFeatured: products.isFeatured,
+      })
+      .from(products)
+      .where(eq(products.status, "active")),
+    db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.isActive, true)),
+    db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        fulfillmentStatus: orders.fulfillmentStatus,
+        paymentStatus: orders.paymentStatus,
+        placedAt: orders.placedAt,
+        userId: orders.userId,
+      })
+      .from(orders),
+    db.select({ id: users.id, isActive: users.isActive }).from(users),
+    db
+      .select({ id: promoCodes.id, isActive: promoCodes.isActive })
+      .from(promoCodes),
+    db
+      .select({
+        id: blogPostsTable.id,
+        status: blogPostsTable.status,
+      })
+      .from(blogPostsTable),
+    db
+      .select({
+        id: adminUsersTable.id,
+        status: adminUsersTable.status,
+        mfaEnabled: adminUsersTable.mfaEnabled,
+      })
+      .from(adminUsersTable),
+    db.select({ id: cmsPagesTable.id }).from(cmsPagesTable),
+    db
+      .select({ id: cmsPageSections.id })
+      .from(cmsPageSections)
+      .where(
+        and(
+          eq(cmsPageSections.sectionType, "faq"),
+          eq(cmsPageSections.isActive, true),
+        ),
+      ),
+  ]);
 
   const activeProducts = productRows.length;
   const featuredProducts = productRows.filter(
@@ -1172,6 +1242,13 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
       .filter((value): value is string => Boolean(value)),
   ).size;
 
+  const activeAdmins = adminUserRows.filter(
+    (user) => user.status === "active",
+  ).length;
+  const pendingAdmins = adminUserRows.filter(
+    (user) => user.status === "pending",
+  ).length;
+
   const activePromos = promoRows.filter((promo) => promo.isActive).length;
   const archivedPromos = Math.max(promoRows.length - activePromos, 0);
   const publishedPosts = blogRows.filter(
@@ -1196,14 +1273,11 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
       `${publishedPosts} published stories`,
       `${scheduledPosts} scheduled`,
     ],
-    cms: [
-      `${Object.keys(cmsPages).length} live pages`,
-      `${faqs.length} FAQ entries`,
-    ],
+    cms: [`${cmsPages.length} live pages`, `${faqSections.length} FAQ entries`],
     discounts: [`${activePromos} active promos`, `${archivedPromos} archived`],
     "admin-users": [
-      `${activeCustomers} active admins`,
-      `${Math.max(userRows.length - activeCustomers, 0)} pending`,
+      `${activeAdmins} active admins`,
+      `${pendingAdmins} pending`,
     ],
   };
 
@@ -1365,15 +1439,6 @@ export const wishlistCopy = {
 };
 
 export const checkoutSteps = ["Shipping", "Delivery", "Payment", "Review"];
-
-export const cmsPages = {
-  contact: {
-    hero: "We’re here across chat, phone, and DM.",
-    channels: contactChannels,
-  },
-  faq: faqs,
-  about: aboutContent,
-};
 
 export const getStorefrontCollections = cache(
   async (): Promise<StorefrontCollections> => {

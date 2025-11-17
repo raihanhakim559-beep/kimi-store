@@ -7,7 +7,6 @@ import { ProductShowcaseCard } from "@/components/product-showcase-card";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import {
-  getAllProducts,
   getProductDetailBySlug,
   getProductReviews,
 } from "@/lib/data/storefront";
@@ -29,10 +28,15 @@ const releaseDateFormatter = new Intl.DateTimeFormat("en", {
   year: "numeric",
 });
 
-const ProductDetailPage = async ({ params }: { params: { slug: string } }) => {
+type ProductDetailPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
+  const { slug } = await params;
   const [product, reviews] = await Promise.all([
-    getProductDetailBySlug(params.slug),
-    getProductReviews(params.slug),
+    getProductDetailBySlug(slug),
+    getProductReviews(slug),
   ]);
 
   if (!product) {
@@ -245,9 +249,6 @@ const ProductDetailPage = async ({ params }: { params: { slug: string } }) => {
   );
 };
 
-export const generateStaticParams = async () => {
-  const catalog = await getAllProducts();
-  return catalog.map((product) => ({ slug: product.slug }));
-};
+export const dynamic = "force-dynamic";
 
 export default ProductDetailPage;

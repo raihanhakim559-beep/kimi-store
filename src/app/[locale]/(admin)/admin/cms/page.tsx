@@ -1,39 +1,65 @@
 import { notFound } from "next/navigation";
 
-import { addFaqEntry, updateCmsPageContent } from "@/actions/admin/cms";
+import {
+  addContactChannel,
+  addFaqEntry,
+  deleteCmsSection,
+  updateCmsPageContent,
+  updateCmsSection,
+} from "@/actions/admin/cms";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
-import { getAdminCmsPages } from "@/lib/data/admin";
+import { getAdminCmsPages, getAdminCmsSections } from "@/lib/data/admin";
 import { getAdminModuleBySlug } from "@/lib/data/storefront";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
   { value: "published", label: "Published" },
   { value: "draft", label: "Draft" },
+  { value: "archived", label: "Archived" },
 ];
+
+const cmsStatusFilterValues = [
+  "all",
+  "published",
+  "draft",
+  "archived",
+] as const;
+type CmsStatusFilter = (typeof cmsStatusFilterValues)[number];
+const isCmsStatusFilter = (value: string): value is CmsStatusFilter =>
+  cmsStatusFilterValues.includes(value as CmsStatusFilter);
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);
 
 type AdminCmsPageProps = {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const AdminCmsPage = async ({ params, searchParams }: AdminCmsPageProps) => {
-  const locale = params.locale ?? "en";
+  const { locale } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const query =
-    typeof searchParams?.query === "string" ? searchParams.query : "";
+    typeof resolvedSearchParams?.query === "string"
+      ? resolvedSearchParams.query
+      : "";
   const rawStatus =
-    typeof searchParams?.status === "string" ? searchParams.status : "all";
-  const normalizedStatus =
-    rawStatus === "draft" || rawStatus === "published" ? rawStatus : "all";
+    typeof resolvedSearchParams?.status === "string"
+      ? resolvedSearchParams.status
+      : "all";
+  const normalizedStatus: CmsStatusFilter = isCmsStatusFilter(rawStatus)
+    ? rawStatus
+    : "all";
 
-  const [adminModule, pages, allPages] = await Promise.all([
-    getAdminModuleBySlug("cms"),
-    getAdminCmsPages({ search: query, status: normalizedStatus, limit: 50 }),
-    getAdminCmsPages({ status: "all", limit: 50 }),
-  ]);
+  const [adminModule, pages, allPages, contactSections, faqSections] =
+    await Promise.all([
+      getAdminModuleBySlug("cms"),
+      getAdminCmsPages({ search: query, status: normalizedStatus, limit: 50 }),
+      getAdminCmsPages({ status: "all", limit: 50 }),
+      getAdminCmsSections("contact"),
+      getAdminCmsSections("faq"),
+    ]);
 
   if (!adminModule) {
     notFound();
@@ -47,6 +73,18 @@ const AdminCmsPage = async ({ params, searchParams }: AdminCmsPageProps) => {
     }
     return latest;
   }, null);
+
+  const getCopyValue = (
+    copy: Record<string, string> | null | undefined,
+  ): string => copy?.[locale] ?? "";
+
+  const getMetadataValue = (
+    metadata: Record<string, unknown> | null | undefined,
+  ) => {
+    if (!metadata || typeof metadata !== "object") return "";
+    const value = (metadata as { value?: unknown }).value;
+    return typeof value === "string" ? value : "";
+  };
 
   return (
     <AdminModuleTemplate module={adminModule}>
@@ -296,6 +334,234 @@ const AdminCmsPage = async ({ params, searchParams }: AdminCmsPageProps) => {
                 Save FAQ
               </button>
             </form>
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+            <h3 className="text-lg font-semibold text-white">
+              Add contact channel
+            </h3>
+            <p className="text-sm text-slate-400">
+              Publish new concierge lines, studio walk-ins, or partner handoffs.
+            </p>
+            <form action={addContactChannel} className="mt-4 space-y-3">
+              <input type="hidden" name="locale" value={locale} />
+              <label className="text-xs text-slate-400 uppercase">Label</label>
+              <input
+                name="label"
+                required
+                placeholder="Customer Care"
+                className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white"
+              />
+              <label className="text-xs text-slate-400 uppercase">
+                Contact value
+              </label>
+              <input
+                name="value"
+                required
+                placeholder="support@kimistore.com"
+                className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white"
+              />
+              <label className="text-xs text-slate-400 uppercase">
+                Description
+              </label>
+              <textarea
+                name="description"
+                rows={3}
+                required
+                placeholder="For order updates, returns, or account assistance."
+                className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white"
+              />
+              <button
+                className={buttonVariants({
+                  size: "sm",
+                  className: "w-full bg-white/90 text-slate-900",
+                })}
+              >
+                Save channel
+              </button>
+            </form>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Contact channels
+              </h3>
+              <p className="text-xs text-slate-400">
+                {contactSections.length} live
+              </p>
+            </div>
+            <div className="mt-4 space-y-4">
+              {contactSections.length === 0 ? (
+                <p className="text-sm text-slate-400">
+                  No contact channels yet.
+                </p>
+              ) : (
+                contactSections.map((section) => {
+                  const label = getCopyValue(section.title, locale);
+                  const description = getCopyValue(section.body, locale);
+                  const value = getMetadataValue(section.metadata);
+                  return (
+                    <div
+                      key={section.id}
+                      className="rounded-xl border border-white/10 bg-slate-900/40 p-4"
+                    >
+                      <form action={updateCmsSection} className="space-y-2">
+                        <input type="hidden" name="locale" value={locale} />
+                        <input
+                          type="hidden"
+                          name="sectionId"
+                          value={section.id}
+                        />
+                        <label className="text-xs text-slate-400 uppercase">
+                          Label
+                        </label>
+                        <input
+                          name="title"
+                          defaultValue={label}
+                          className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                        />
+                        <label className="text-xs text-slate-400 uppercase">
+                          Contact value
+                        </label>
+                        <input
+                          name="metadataValue"
+                          defaultValue={value}
+                          className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                        />
+                        <label className="text-xs text-slate-400 uppercase">
+                          Description
+                        </label>
+                        <textarea
+                          name="body"
+                          rows={2}
+                          defaultValue={description}
+                          className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                        />
+                        <div className="flex justify-end pt-2">
+                          <button
+                            className={buttonVariants({
+                              size: "sm",
+                              className:
+                                "bg-white/90 px-4 text-slate-900 hover:bg-white",
+                            })}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </form>
+                      <form
+                        action={deleteCmsSection}
+                        className="mt-2 flex justify-end"
+                      >
+                        <input type="hidden" name="locale" value={locale} />
+                        <input
+                          type="hidden"
+                          name="sectionId"
+                          value={section.id}
+                        />
+                        <button
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "sm",
+                            className: "border border-white/20 px-4 text-white",
+                          })}
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">
+              FAQ entries ({faqSections.length})
+            </h3>
+            <p className="text-xs text-slate-400">
+              Edit or retire questions per locale.
+            </p>
+          </div>
+          <div className="mt-4 space-y-4">
+            {faqSections.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No FAQ entries available yet.
+              </p>
+            ) : (
+              faqSections.map((section) => {
+                const question = getCopyValue(section.title, locale);
+                const answer = getCopyValue(section.body, locale);
+                return (
+                  <div
+                    key={section.id}
+                    className="rounded-xl border border-white/10 bg-slate-900/40 p-4"
+                  >
+                    <form action={updateCmsSection} className="space-y-2">
+                      <input type="hidden" name="locale" value={locale} />
+                      <input
+                        type="hidden"
+                        name="sectionId"
+                        value={section.id}
+                      />
+                      <label className="text-xs text-slate-400 uppercase">
+                        Question
+                      </label>
+                      <input
+                        name="title"
+                        defaultValue={question}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                      />
+                      <label className="text-xs text-slate-400 uppercase">
+                        Answer
+                      </label>
+                      <textarea
+                        name="body"
+                        rows={3}
+                        defaultValue={answer}
+                        className="w-full rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                      />
+                      <div className="flex justify-end pt-2">
+                        <button
+                          className={buttonVariants({
+                            size: "sm",
+                            className:
+                              "bg-white/90 px-4 text-slate-900 hover:bg-white",
+                          })}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                    <form
+                      action={deleteCmsSection}
+                      className="mt-2 flex justify-end"
+                    >
+                      <input type="hidden" name="locale" value={locale} />
+                      <input
+                        type="hidden"
+                        name="sectionId"
+                        value={section.id}
+                      />
+                      <button
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "sm",
+                          className: "border border-white/20 px-4 text-white",
+                        })}
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
       </div>

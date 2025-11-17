@@ -9,23 +9,26 @@ import {
   type RawSearchParams,
 } from "@/lib/category-filter-utils";
 import {
-  getCategoriesByAudience,
   getCategoryBySlug,
   getProductsByCategory,
 } from "@/lib/data/storefront";
 
+type MenCategoryPageProps = {
+  params: Promise<{ category: string }>;
+  searchParams?: Promise<RawSearchParams | undefined>;
+};
+
 const MenCategoryPage = async ({
   params,
   searchParams,
-}: {
-  params: { category: string };
-  searchParams?: RawSearchParams;
-}) => {
-  const filters = parseCategoryFilterState(searchParams);
+}: MenCategoryPageProps) => {
+  const resolvedParams = await params;
+  const resolvedSearchParams = (await searchParams) ?? undefined;
+  const filters = parseCategoryFilterState(resolvedSearchParams);
 
   const [category, categoryResponse] = await Promise.all([
-    getCategoryBySlug(params.category),
-    getProductsByCategory(params.category, filters),
+    getCategoryBySlug(resolvedParams.category),
+    getProductsByCategory(resolvedParams.category, filters),
   ]);
 
   const categoryProducts = categoryResponse.products;
@@ -59,7 +62,7 @@ const MenCategoryPage = async ({
         <CategoryFilterPanel
           filters={filters}
           facets={facets}
-          resetHref={`/men/${params.category}`}
+          resetHref={`/men/${resolvedParams.category}`}
         />
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -118,10 +121,6 @@ const MenCategoryPage = async ({
     </div>
   );
 };
-
-export const generateStaticParams = async () => {
-  const categories = await getCategoriesByAudience("men");
-  return categories.map((category) => ({ category: category.slug }));
-};
+export const dynamic = "force-dynamic";
 
 export default MenCategoryPage;

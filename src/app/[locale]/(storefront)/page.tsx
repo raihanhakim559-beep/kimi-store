@@ -47,8 +47,13 @@ const serviceHighlights = [
   },
 ];
 
-const HomePage = async ({ params }: { params: { locale: string } }) => {
-  const locale = (params?.locale ?? routing.defaultLocale) as Locale;
+const HomePage = async ({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) => {
+  const resolvedParams = await params;
+  const locale = (resolvedParams?.locale ?? routing.defaultLocale) as Locale;
   const [collections, blogPosts] = await Promise.all([
     getStorefrontCollections(),
     getBlogPosts(),

@@ -70,26 +70,31 @@ const formatDate = (date?: Date | null) => {
 };
 
 type AdminOrdersPageProps = {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const AdminOrdersPage = async ({
   params,
   searchParams,
 }: AdminOrdersPageProps) => {
-  const locale = params.locale ?? "en";
+  const { locale } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const query =
-    typeof searchParams?.query === "string" ? searchParams.query : "";
+    typeof resolvedSearchParams.query === "string"
+      ? resolvedSearchParams.query
+      : "";
   const status =
-    typeof searchParams?.status === "string" ? searchParams.status : "all";
+    typeof resolvedSearchParams.status === "string"
+      ? resolvedSearchParams.status
+      : "all";
   const paymentStatus =
-    typeof searchParams?.paymentStatus === "string"
-      ? searchParams.paymentStatus
+    typeof resolvedSearchParams.paymentStatus === "string"
+      ? resolvedSearchParams.paymentStatus
       : "all";
   const fulfillmentStatus =
-    typeof searchParams?.fulfillmentStatus === "string"
-      ? searchParams.fulfillmentStatus
+    typeof resolvedSearchParams.fulfillmentStatus === "string"
+      ? resolvedSearchParams.fulfillmentStatus
       : "all";
 
   const normalizeFilter = <T extends string>(

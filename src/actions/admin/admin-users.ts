@@ -1,13 +1,13 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { adminUsersTable, db } from "@/lib/schema";
+
 const adminRoleEnum = ["owner", "editor", "analyst", "support"] as const;
 const adminStatusEnum = ["active", "pending", "disabled"] as const;
-
-const simulateAdminMutation = () =>
-  new Promise((resolve) => setTimeout(resolve, 200));
 
 const revalidateAdmins = (locale: string) =>
   revalidatePath(`/${locale}/admin/admin-users`);
@@ -42,8 +42,13 @@ export const updateAdminUserRole = async (formData: FormData) => {
     throw new Error(parsed.error.message);
   }
 
-  const { locale } = parsed.data;
-  await simulateAdminMutation();
+  const { locale, userId, role } = parsed.data;
+
+  await db
+    .update(adminUsersTable)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(adminUsersTable.id, userId));
+
   revalidateAdmins(locale);
 };
 
@@ -58,8 +63,13 @@ export const updateAdminUserStatus = async (formData: FormData) => {
     throw new Error(parsed.error.message);
   }
 
-  const { locale } = parsed.data;
-  await simulateAdminMutation();
+  const { locale, userId, status } = parsed.data;
+
+  await db
+    .update(adminUsersTable)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(adminUsersTable.id, userId));
+
   revalidateAdmins(locale);
 };
 
@@ -75,7 +85,31 @@ export const inviteAdminUser = async (formData: FormData) => {
     throw new Error(parsed.error.message);
   }
 
-  const { locale } = parsed.data;
-  await simulateAdminMutation();
+  const { locale, name, email, role } = parsed.data;
+  const now = new Date();
+
+  await db
+    .insert(adminUsersTable)
+    .values({
+      id: crypto.randomUUID(),
+      name,
+      email,
+      role,
+      status: "pending",
+      invitedAt: now,
+      updatedAt: now,
+      teams: [],
+      mfaEnabled: false,
+    })
+    .onConflictDoUpdate({
+      target: adminUsersTable.email,
+      set: {
+        name,
+        role,
+        status: "pending",
+        updatedAt: now,
+      },
+    });
+
   revalidateAdmins(locale);
 };

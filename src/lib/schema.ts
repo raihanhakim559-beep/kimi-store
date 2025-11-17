@@ -13,6 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
+export type LocaleCopy = Record<string, string>;
+export type JsonMap = Record<string, unknown>;
+
 const sql = neon(process.env.DATABASE_URL!);
 export const db = drizzle({ client: sql });
 
@@ -123,6 +126,90 @@ export const authenticators = pgTable(
     },
   ],
 );
+
+export const adminRoleEnum = pgEnum("admin_role", [
+  "owner",
+  "editor",
+  "analyst",
+  "support",
+]);
+
+export const adminUserStatusEnum = pgEnum("admin_user_status", [
+  "active",
+  "pending",
+  "disabled",
+]);
+
+export const cmsPageStatusEnum = pgEnum("cms_page_status", [
+  "draft",
+  "published",
+  "archived",
+]);
+
+export const cmsSectionTypeEnum = pgEnum("cms_section_type", [
+  "pillar",
+  "faq",
+  "contact_channel",
+  "content_block",
+]);
+
+export const adminUsersTable = pgTable("admin_user", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId").references(() => users.id, { onDelete: "set null" }),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  role: adminRoleEnum("role").default("support").notNull(),
+  status: adminUserStatusEnum("status").default("pending").notNull(),
+  location: text("location"),
+  teams: jsonb("teams").$type<string[]>().default([]).notNull(),
+  mfaEnabled: boolean("mfaEnabled").default(false).notNull(),
+  invitedAt: timestamp("invitedAt", { mode: "date" }).defaultNow().notNull(),
+  lastLoginAt: timestamp("lastLoginAt", { mode: "date" }),
+  metadata: jsonb("metadata").$type<JsonMap>(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const cmsPagesTable = pgTable("cms_page", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  label: jsonb("label").$type<LocaleCopy>(),
+  hero: jsonb("hero").$type<LocaleCopy>(),
+  description: jsonb("description").$type<LocaleCopy>(),
+  owner: text("owner"),
+  summary: text("summary"),
+  status: cmsPageStatusEnum("status").default("draft").notNull(),
+  publishedAt: timestamp("publishedAt", { mode: "date" }),
+  lastEditedAt: timestamp("lastEditedAt", { mode: "date" }).defaultNow(),
+  metadata: jsonb("metadata").$type<JsonMap>(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const cmsPageSections = pgTable("cms_page_section", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  pageId: text("pageId")
+    .references(() => cmsPagesTable.id, { onDelete: "cascade" })
+    .notNull(),
+  sectionType: cmsSectionTypeEnum("sectionType")
+    .default("content_block")
+    .notNull(),
+  key: text("key"),
+  title: jsonb("title").$type<LocaleCopy>(),
+  body: jsonb("body").$type<LocaleCopy>(),
+  metadata: jsonb("metadata").$type<JsonMap>(),
+  position: integer("position").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
 
 // --------------------
 // Commerce domain

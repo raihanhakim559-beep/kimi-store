@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 
 import {
   initialContactFormState,
@@ -10,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const ContactForm = () => {
-  const [state, formAction] = useFormState(
+  const [state, formAction] = useActionState(
     submitContactRequest,
     initialContactFormState,
   );

@@ -24,21 +24,28 @@ const statusOptions = [
 ];
 
 type AdminCategoriesPageProps = {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const AdminCategoriesPage = async ({
   params,
   searchParams,
 }: AdminCategoriesPageProps) => {
-  const locale = params.locale ?? "en";
+  const { locale } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const query =
-    typeof searchParams?.query === "string" ? searchParams.query : "";
+    typeof resolvedSearchParams.query === "string"
+      ? resolvedSearchParams.query
+      : "";
   const audience =
-    typeof searchParams?.audience === "string" ? searchParams.audience : "all";
+    typeof resolvedSearchParams.audience === "string"
+      ? resolvedSearchParams.audience
+      : "all";
   const status =
-    typeof searchParams?.status === "string" ? searchParams.status : "all";
+    typeof resolvedSearchParams.status === "string"
+      ? resolvedSearchParams.status
+      : "all";
 
   const [adminModule, categoryRows] = await Promise.all([
     getAdminModuleBySlug("categories"),

@@ -50,21 +50,28 @@ const formatDate = (date?: Date | null) => {
 };
 
 type AdminUsersPageProps = {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const AdminUsersPage = async ({
   params,
   searchParams,
 }: AdminUsersPageProps) => {
-  const locale = params.locale ?? "en";
+  const { locale } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const query =
-    typeof searchParams?.query === "string" ? searchParams.query : "";
+    typeof resolvedSearchParams.query === "string"
+      ? resolvedSearchParams.query
+      : "";
   const rawRole =
-    typeof searchParams?.role === "string" ? searchParams.role : "all";
+    typeof resolvedSearchParams.role === "string"
+      ? resolvedSearchParams.role
+      : "all";
   const rawStatus =
-    typeof searchParams?.status === "string" ? searchParams.status : "all";
+    typeof resolvedSearchParams.status === "string"
+      ? resolvedSearchParams.status
+      : "all";
 
   const normalizedRole: RoleFilter = isRoleFilter(rawRole) ? rawRole : "all";
   const normalizedStatus: StatusFilter = isStatusFilter(rawStatus)
