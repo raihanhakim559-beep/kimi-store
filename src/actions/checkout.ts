@@ -1,20 +1,15 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { env } from "@/env.mjs";
 import { auth } from "@/lib/auth";
 import { getCartSummary } from "@/lib/cart";
-import { db, orderItems, orders } from "@/lib/schema";
+import { persistPendingOrder } from "@/lib/order-persistence";
+import { db, orders } from "@/lib/schema";
 import { stripeServer } from "@/lib/stripe";
-
-const ORDER_PREFIX = "KS";
-
-const generateOrderNumber = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  return `${ORDER_PREFIX}-${timestamp}`;
-};
+import { getUserActivationState } from "@/lib/user-status";
 
 export const createCheckoutSession = async (formData: FormData) => {
   const localeInput = formData.get("locale");
@@ -28,7 +23,10 @@ export const createCheckoutSession = async (formData: FormData) => {
     redirect(`/${locale}/account/login`);
   }
 
-  if (!session.user.isActive) {
+  const userId = session.user.id;
+  const userStatus = await getUserActivationState(userId);
+
+  if (!userStatus?.isActive) {
     redirect(`/${locale}/account/profile?activation=1`);
   }
   const { cart, items, totals } = await getCartSummary();
@@ -36,84 +34,18 @@ export const createCheckoutSession = async (formData: FormData) => {
   if (!cart || items.length === 0) {
     redirect(`/${locale}/cart`);
   }
+  const currency = cart.currency ?? "USD";
+  const discountTotal = cart.discountTotal ?? 0;
+  const taxTotal = cart.taxTotal ?? 0;
 
-  const userId = session?.user?.id ?? null;
-
-  const { orderId, orderNumber } = await db.transaction(async (tx) => {
-    const [existingOrder] = await tx
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-      })
-      .from(orders)
-      .where(and(eq(orders.cartId, cart.id), eq(orders.status, "pending")))
-      .limit(1);
-
-    let targetOrderId = existingOrder?.id;
-    const nextOrderNumber = existingOrder?.orderNumber ?? generateOrderNumber();
-
-    if (existingOrder) {
-      await tx
-        .delete(orderItems)
-        .where(eq(orderItems.orderId, existingOrder.id));
-      await tx
-        .update(orders)
-        .set({
-          userId,
-          subtotal: totals.subtotal,
-          shippingTotal: totals.shipping,
-          discountTotal: cart.discountTotal,
-          taxTotal: cart.taxTotal,
-          total: totals.total,
-          currency: cart.currency,
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, existingOrder.id));
-    } else {
-      const [created] = await tx
-        .insert(orders)
-        .values({
-          orderNumber: nextOrderNumber,
-          cartId: cart.id,
-          userId,
-          subtotal: totals.subtotal,
-          shippingTotal: totals.shipping,
-          discountTotal: cart.discountTotal,
-          taxTotal: cart.taxTotal,
-          total: totals.total,
-          currency: cart.currency,
-        })
-        .returning({ id: orders.id });
-
-      targetOrderId = created?.id;
-    }
-
-    if (!targetOrderId) {
-      throw new Error("Unable to create order");
-    }
-
-    if (items.length) {
-      await tx.insert(orderItems).values(
-        items.map((item) => ({
-          orderId: targetOrderId!,
-          productId: item.productId,
-          productVariantId: item.productVariantId,
-          name: item.title,
-          sku: item.sku ?? null,
-          size: item.size ?? null,
-          color: item.color ?? null,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-          snapshot: {
-            slug: item.productSlug,
-            description: item.description,
-          },
-        })),
-      );
-    }
-
-    return { orderId: targetOrderId!, orderNumber: nextOrderNumber };
+  const { orderId, orderNumber } = await persistPendingOrder({
+    cartId: cart.id,
+    userId,
+    currency,
+    discountTotal,
+    taxTotal,
+    totals,
+    items,
   });
 
   const baseUrl = env.APP_URL.endsWith("/")
@@ -129,7 +61,7 @@ export const createCheckoutSession = async (formData: FormData) => {
     metadata: {
       orderId,
       cartId: cart.id,
-      userId: userId ?? "",
+      userId,
     },
     line_items: items.map((item) => ({
       quantity: item.quantity,

@@ -114,7 +114,7 @@ export default function FooterStorefront() {
               </p>
               <ul className="mt-4 space-y-3 text-sm">
                 {column.links.map((link) => (
-                  <li key={`${column.title}-${link.href}`}>
+                  <li key={`${column.title}-${link.href}-${link.label}`}>
                     <Link
                       href={link.href}
                       className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition"

@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { getCartSummary } from "@/lib/cart";
 import { checkoutSteps } from "@/lib/data/storefront/index";
 import { formatCurrency } from "@/lib/formatters";
+import { getUserActivationState } from "@/lib/user-status";
 
 const formatMoney = (amountInCents: number, currency: string) =>
   formatCurrency(amountInCents / 100, {
@@ -34,9 +35,10 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
     redirect(`/${locale}/account/login`);
   }
 
+  const userStatus = await getUserActivationState(session.user.id);
   const currency = cart?.currency ?? "USD";
   const discountValue = cart?.discountTotal ?? 0;
-  const requiresActivation = !session.user.isActive;
+  const requiresActivation = !userStatus?.isActive;
 
   const hasSuccessState = resolvedSearchParams?.success === "1";
   const hasCancelState = resolvedSearchParams?.cancelled === "1";

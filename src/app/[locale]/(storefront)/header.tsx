@@ -1,15 +1,9 @@
-import { ArrowUpRight, Heart, Menu, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowUpRight, Heart, Menu, ShoppingBag } from "lucide-react";
 
 import { AuthControls } from "@/components/auth-controls";
 import { SearchBar } from "@/components/search-bar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -21,12 +15,12 @@ import {
 } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
+import { getCartSummary } from "@/lib/cart";
 import { storefrontNavLinks } from "@/lib/data/storefront/collections";
-
-const announcements = [
-  { label: "Book a studio fitting", href: "/contact" },
-  { label: "Movement Club residency", href: "/blog" },
-];
+import {
+  getWishlistEntries,
+  type WishlistEntry,
+} from "@/lib/data/storefront/wishlist";
 
 type StorefrontNavLink = { label: string; href: string };
 type BuiltNavItem = StorefrontNavLink & { description: string; badge?: string };
@@ -57,8 +51,6 @@ const secondaryNav = [
   { label: "Account dashboard", href: "/account/dashboard" },
 ];
 
-const labBadges = ["Motion Lab", "Material Lab", "Movement Club"];
-
 const buildNavItems = (): BuiltNavItem[] =>
   storefrontNavLinks.primary.map((item: StorefrontNavLink) => ({
     ...item,
@@ -69,147 +61,114 @@ const buildNavItems = (): BuiltNavItem[] =>
 
 export default async function HeaderStorefront() {
   const session = await auth();
+  const cartSummaryPromise = getCartSummary();
+  const wishlistItemsPromise: Promise<WishlistEntry[]> = session?.user
+    ? getWishlistEntries(session.user.id)
+    : Promise.resolve([]);
+
+  const [cartSummary, wishlistItems] = await Promise.all([
+    cartSummaryPromise,
+    wishlistItemsPromise,
+  ]);
+
+  const cartItemCount = cartSummary.items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
+  const wishlistCount = wishlistItems.length;
   const navItems = buildNavItems();
 
   return (
-    <header className="relative z-30">
-      <div className="from-muted/60 via-background to-background border-b bg-gradient-to-r">
-        <div className="container flex flex-wrap items-center justify-between gap-4 py-2 text-xs font-medium tracking-[0.25em] uppercase">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground">Studio Drop</span>
-              <Badge
-                variant="outline"
-                className="rounded-full text-[10px] uppercase"
-              >
-                AW25
-              </Badge>
-            </div>
-            <span className="text-foreground flex items-center gap-1">
-              <Sparkles className="size-3" /> Midnight launch live now
-            </span>
-          </div>
-          <div className="text-muted-foreground hidden items-center gap-4 md:flex">
-            {announcements.map((item) => (
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/75 sticky top-0 z-30 border-b backdrop-blur">
+      <div className="container flex h-20 items-center gap-3 lg:gap-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full border lg:hidden"
+            >
+              <Menu className="size-5" />
+              <span className="sr-only">Open navigation</span>
+            </Button>
+          </SheetTrigger>
+          <NavigationSheet sessionActive={Boolean(session?.user)} />
+        </Sheet>
+
+        <Link
+          href="/"
+          className="font-mono text-xl font-black tracking-tight lg:text-2xl"
+        >
+          Kimi Studio
+        </Link>
+
+        <nav className="text-muted-foreground hidden flex-1 items-center justify-center gap-5 text-sm font-medium lg:flex">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="hover:text-foreground transition"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <SearchBar
+            variant="command-button"
+            commandButtonStyle="pill"
+            className="hidden min-w-[220px] shrink-0 xl:flex"
+          />
+          {session?.user && (
+            <>
               <Link
-                key={item.href}
-                href={item.href}
-                className="hover:text-foreground inline-flex items-center gap-1 transition"
+                href="/wishlist"
+                aria-label="Wishlist"
+                className={buttonVariants({
+                  variant: "ghost",
+                  size: "icon",
+                  className: "relative rounded-full border",
+                })}
               >
-                {item.label}
-                <ArrowUpRight className="size-3" />
+                <Heart className="size-4" />
+                {wishlistCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="border-background bg-foreground text-background absolute -top-1 -right-1 flex h-5 min-w-[1.3rem] items-center justify-center rounded-full border px-1 text-[10px] leading-none font-semibold"
+                  >
+                    {wishlistCount > 99 ? "99+" : wishlistCount}
+                  </Badge>
+                )}
               </Link>
-            ))}
-          </div>
-          <div className="text-muted-foreground flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-            Kuala Lumpur · 28°C
-          </div>
+              <Link
+                href="/cart"
+                aria-label="Cart"
+                className={buttonVariants({
+                  variant: "ghost",
+                  size: "icon",
+                  className: "relative rounded-full border",
+                })}
+              >
+                <ShoppingBag className="size-4" />
+                {cartItemCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="border-background bg-foreground text-background absolute -top-1 -right-1 flex h-5 min-w-[1.3rem] items-center justify-center rounded-full border px-1 text-[10px] leading-none font-semibold"
+                  >
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                  </Badge>
+                )}
+              </Link>
+            </>
+          )}
+          <AuthControls session={session} />
         </div>
       </div>
 
-      <div className="bg-background/90 supports-[backdrop-filter]:bg-background/75 sticky top-0 border-b backdrop-blur">
-        <div className="container flex h-20 items-center gap-3 lg:gap-6">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border lg:hidden"
-              >
-                <Menu className="size-5" />
-                <span className="sr-only">Open navigation</span>
-              </Button>
-            </SheetTrigger>
-            <NavigationSheet sessionActive={Boolean(session?.user)} />
-          </Sheet>
-
-          <Link
-            href="/"
-            className="font-mono text-xl font-black tracking-tight lg:text-2xl"
-          >
-            Kimi Studio
-          </Link>
-
-          <NavigationMenu className="hidden flex-1 lg:flex">
-            <NavigationMenuList className="gap-2">
-              {navItems.map((item) => (
-                <NavigationMenuItem key={item.href}>
-                  <NavigationMenuLink asChild>
-                    <Link
-                      href={item.href}
-                      className="hover:border-foreground/30 data-[active]:border-foreground/40 group rounded-2xl border border-transparent px-4 py-3 text-left transition"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold tracking-[0.2em] uppercase">
-                          {item.label}
-                        </span>
-                        {item.badge ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] uppercase"
-                          >
-                            {item.badge}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <p className="text-muted-foreground text-xs leading-snug">
-                        {item.description}
-                      </p>
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          <div className="flex flex-1 items-center justify-end gap-2">
-            <SearchBar
-              variant="command-button"
-              commandButtonStyle="pill"
-              className="hidden min-w-[220px] shrink-0 xl:flex"
-            />
-            {session?.user && (
-              <>
-                <Link
-                  href="/wishlist"
-                  aria-label="Wishlist"
-                  className={buttonVariants({
-                    variant: "ghost",
-                    size: "icon",
-                    className: "rounded-full border",
-                  })}
-                >
-                  <Heart className="size-4" />
-                </Link>
-                <Link
-                  href="/cart"
-                  aria-label="Cart"
-                  className={buttonVariants({
-                    variant: "ghost",
-                    size: "icon",
-                    className: "rounded-full border",
-                  })}
-                >
-                  <ShoppingBag className="size-4" />
-                </Link>
-              </>
-            )}
-            <AuthControls session={session} />
-          </div>
-        </div>
-
-        <div className="border-t lg:hidden">
-          <div className="container flex flex-col gap-3 py-4">
-            <SearchBar size="full" placeholder="Search Kimi" />
-            <div className="text-muted-foreground flex flex-wrap gap-2 text-xs uppercase">
-              {labBadges.map((badge) => (
-                <span key={badge} className="rounded-full border px-3 py-1">
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="border-t lg:hidden">
+        <div className="container flex flex-col gap-3 py-4">
+          <SearchBar size="full" placeholder="Search Kimi" />
         </div>
       </div>
     </header>

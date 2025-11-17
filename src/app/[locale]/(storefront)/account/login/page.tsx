@@ -5,6 +5,7 @@ import { ResendVerificationButton } from "@/components/resend-verification-butto
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
 import { getEnabledAuthProviders } from "@/lib/auth/provider-config";
+import { getUserActivationState } from "@/lib/user-status";
 
 type AccountLoginPageProps = {
   params: Promise<{ locale?: string }> | { locale?: string };
@@ -21,12 +22,15 @@ const AccountLoginPage = async ({
   const locale = resolvedParams?.locale ?? "en";
   const providers = getEnabledAuthProviders();
   const session = await auth();
-  const pendingActivation = Boolean(
-    session?.user?.id && !session.user.isActive,
-  );
+  let pendingActivation = false;
 
-  if (session?.user?.id && !pendingActivation) {
-    redirect(`/${locale}`);
+  if (session?.user?.id) {
+    const userStatus = await getUserActivationState(session.user.id);
+    pendingActivation = !userStatus?.isActive;
+
+    if (!pendingActivation) {
+      redirect(`/${locale}`);
+    }
   }
 
   const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
