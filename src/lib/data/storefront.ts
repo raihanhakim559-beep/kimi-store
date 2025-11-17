@@ -19,6 +19,7 @@ import {
   translateCopy,
 } from "@/lib/i18n/copy";
 import {
+  blogPostsTable,
   categories,
   db,
   orderItems,
@@ -27,6 +28,7 @@ import {
   products,
   productVariants,
   promoCodes,
+  reviews as reviewTable,
   users,
 } from "@/lib/schema";
 
@@ -88,30 +90,6 @@ export type ProductReview = {
   createdAt: string;
 };
 
-const reviewTemplates: Omit<ProductReview, "id">[] = [
-  {
-    author: "Kai Brennan",
-    rating: 5,
-    headline: "Cloud cushioning for 14-hour days",
-    body: "Rotated these through a conference week and never once wanted to switch pairs. Foam rebounds fast and the collar padding stops rubbing even without socks.",
-    createdAt: "2025-08-04",
-  },
-  {
-    author: "Nadia Lim",
-    rating: 4,
-    headline: "Stable platform for HIIT",
-    body: "Lateral support feels dialed—no ankle wobble during jumps. Runs slightly narrow so I sized up half a size.",
-    createdAt: "2025-07-16",
-  },
-  {
-    author: "Mateo Ortiz",
-    rating: 5,
-    headline: "Waterproof without the heat",
-    body: "Tested in KL storms and feet stayed dry while the knit still breathed. Traction on wet tile is impressive.",
-    createdAt: "2025-06-02",
-  },
-];
-
 type BlogPostSection = {
   heading?: string;
   body: string;
@@ -126,6 +104,94 @@ export type BlogPost = {
   minutesToRead: number;
   sections: BlogPostSection[];
 };
+
+const normalizeBlogSections = (value: unknown): BlogPostSection[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const sections: BlogPostSection[] = [];
+  value.forEach((section) => {
+    if (!section || typeof section !== "object") {
+      return;
+    }
+    const heading =
+      "heading" in section && typeof section.heading === "string"
+        ? section.heading
+        : undefined;
+    const body =
+      "body" in section && typeof section.body === "string"
+        ? section.body
+        : undefined;
+    if (!body) {
+      return;
+    }
+    sections.push({ heading, body });
+  });
+  return sections;
+};
+
+const mapBlogPostRecord = (record: {
+  slug: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  minutesToRead: number;
+  sections: BlogPostSection[] | null;
+  publishedAt: Date | null;
+}): BlogPost => ({
+  slug: record.slug,
+  title: record.title,
+  excerpt: record.excerpt,
+  author: record.author,
+  minutesToRead: record.minutesToRead,
+  publishedAt: (record.publishedAt ?? new Date()).toISOString(),
+  sections: normalizeBlogSections(record.sections),
+});
+
+const fetchPublishedBlogPosts = cache(async (): Promise<BlogPost[]> => {
+  const rows = await db
+    .select({
+      slug: blogPostsTable.slug,
+      title: blogPostsTable.title,
+      excerpt: blogPostsTable.excerpt,
+      author: blogPostsTable.author,
+      minutesToRead: blogPostsTable.minutesToRead,
+      sections: blogPostsTable.sections,
+      publishedAt: blogPostsTable.publishedAt,
+    })
+    .from(blogPostsTable)
+    .where(eq(blogPostsTable.status, "published"))
+    .orderBy(desc(blogPostsTable.publishedAt));
+
+  return rows.map(mapBlogPostRecord);
+});
+
+export const getBlogPosts = fetchPublishedBlogPosts;
+
+export const getBlogPostBySlug = cache(async (slug: string) => {
+  const rows = await db
+    .select({
+      slug: blogPostsTable.slug,
+      title: blogPostsTable.title,
+      excerpt: blogPostsTable.excerpt,
+      author: blogPostsTable.author,
+      minutesToRead: blogPostsTable.minutesToRead,
+      sections: blogPostsTable.sections,
+      publishedAt: blogPostsTable.publishedAt,
+    })
+    .from(blogPostsTable)
+    .where(
+      and(
+        eq(blogPostsTable.slug, slug),
+        eq(blogPostsTable.status, "published"),
+      ),
+    )
+    .limit(1);
+
+  const record = rows[0];
+  return record ? mapBlogPostRecord(record) : null;
+});
 
 export type Faq = {
   question: string;
@@ -703,74 +769,32 @@ export const searchProducts = cache(async (rawQuery: string, limit = 24) => {
   });
 });
 
-export const getProductReviews = cache(async (slug: string) =>
-  reviewTemplates.map((review, index) => ({
-    ...review,
-    id: `${slug}-${index}`,
-  })),
-);
+export const getProductReviews = cache(async (slug: string) => {
+  const rows = await db
+    .select({
+      id: reviewTable.id,
+      rating: reviewTable.rating,
+      title: reviewTable.title,
+      comment: reviewTable.comment,
+      createdAt: reviewTable.createdAt,
+      author: users.name,
+    })
+    .from(reviewTable)
+    .innerJoin(products, eq(reviewTable.productId, products.id))
+    .leftJoin(users, eq(reviewTable.userId, users.id))
+    .where(and(eq(products.slug, slug), eq(reviewTable.isPublished, true)))
+    .orderBy(desc(reviewTable.createdAt))
+    .limit(12);
 
-export const blogPosts: BlogPost[] = [
-  {
-    slug: "elevate-the-daily-commute",
-    title: "Elevate the Daily Commute",
-    excerpt:
-      "Layer breathable knits with waterproof protection for the sprint between meetings.",
-    author: "Lina Ortega",
-    publishedAt: "2025-08-12",
-    minutesToRead: 6,
-    sections: [
-      {
-        body: "Commuting shoes need to move fast between climates. The Orbit City Sneaker uses coated leather on high splash zones and perforations elsewhere to breathe.",
-      },
-      {
-        heading: "Layered Cushioning",
-        body: "Stacking BubbleSoft foam over a firm crash pad stops heel drag on subway platforms while keeping your stride crisp on sidewalks.",
-      },
-      {
-        heading: "Styling cues",
-        body: "Monochrome palettes lengthen the leg line—pair Stone with crisp tailoring for instant polish.",
-      },
-    ],
-  },
-  {
-    slug: "tempo-training-reset",
-    title: "Tempo Training Reset",
-    excerpt:
-      "Rebuild stability after a heavy season with functional drills and the Pulse Sync Trainer.",
-    author: "Coach Milo",
-    publishedAt: "2025-06-05",
-    minutesToRead: 8,
-    sections: [
-      {
-        body: "Training plates should match the workout. Pulse Sync keeps you low to the ground so you can load glutes without rolling ankles.",
-      },
-      {
-        heading: "Anchor points matter",
-        body: "Tri-anchored lacing pulls from the arch, instep, and collar to wrap the foot evenly without hot spots.",
-      },
-    ],
-  },
-  {
-    slug: "heels-that-go-the-distance",
-    title: "Heels That Go the Distance",
-    excerpt:
-      "Zenith Form brings runway lines with commuter-level cushioning for 12-hour wear.",
-    author: "Editorial Team",
-    publishedAt: "2025-04-18",
-    minutesToRead: 5,
-    sections: [
-      {
-        heading: "Support without compromise",
-        body: "An anti-sway shank resists torsion so you can sprint for the elevator without wobble.",
-      },
-      {
-        heading: "Grip in disguise",
-        body: "A micro-lug rubber forefoot disappears visually but locks in on slick lobby marble.",
-      },
-    ],
-  },
-];
+  return rows.map((row) => ({
+    id: row.id,
+    author: row.author ?? "Kimi Member",
+    rating: row.rating,
+    headline: row.title ?? "Review",
+    body: row.comment ?? "",
+    createdAt: (row.createdAt ?? new Date()).toISOString(),
+  }));
+});
 
 type LocalizedFaqEntry = {
   question: Copy;
@@ -1089,7 +1113,7 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
 
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [productRows, categoryRows, orderRows, userRows, promoRows] =
+  const [productRows, categoryRows, orderRows, userRows, promoRows, blogRows] =
     await Promise.all([
       db
         .select({
@@ -1116,6 +1140,12 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
       db
         .select({ id: promoCodes.id, isActive: promoCodes.isActive })
         .from(promoCodes),
+      db
+        .select({
+          id: blogPostsTable.id,
+          status: blogPostsTable.status,
+        })
+        .from(blogPostsTable),
     ]);
 
   const activeProducts = productRows.length;
@@ -1144,6 +1174,12 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
 
   const activePromos = promoRows.filter((promo) => promo.isActive).length;
   const archivedPromos = Math.max(promoRows.length - activePromos, 0);
+  const publishedPosts = blogRows.filter(
+    (post) => post.status === "published",
+  ).length;
+  const scheduledPosts = blogRows.filter(
+    (post) => post.status === "scheduled",
+  ).length;
 
   const metricsBySlug: Record<string, string[]> = {
     products: [`${activeProducts} live styles`, `${featuredProducts} featured`],
@@ -1157,8 +1193,8 @@ export const getAdminModules = cache(async (): Promise<AdminModule[]> => {
       `${activeCustomers24h} active today`,
     ],
     blog: [
-      `${blogPosts.length} published stories`,
-      `${Math.max(blogPosts.length - 1, 0)} scheduled`,
+      `${publishedPosts} published stories`,
+      `${scheduledPosts} scheduled`,
     ],
     cms: [
       `${Object.keys(cmsPages).length} live pages`,
@@ -1355,9 +1391,6 @@ export const getStorefrontCollections = cache(
 );
 
 export const storefrontNavLinks = contentNav;
-
-export const getBlogPostBySlug = (slug: string) =>
-  blogPosts.find((post) => post.slug === slug) ?? null;
 
 export const getAdminModuleBySlug = cache(async (slug: string) => {
   const modules = await getAdminModules();

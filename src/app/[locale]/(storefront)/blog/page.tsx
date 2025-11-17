@@ -1,7 +1,9 @@
 import { Link } from "@/i18n/navigation";
-import { blogPosts } from "@/lib/data/storefront";
+import { getBlogPosts } from "@/lib/data/storefront";
 
-const BlogPage = () => {
+const BlogPage = async () => {
+  const blogPosts = await getBlogPosts();
+
   return (
     <div className="space-y-10">
       <header className="bg-muted/50 rounded-3xl border p-8">

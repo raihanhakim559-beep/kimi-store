@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { Link } from "@/i18n/navigation";
-import { blogPosts, getBlogPostBySlug } from "@/lib/data/storefront";
+import { getBlogPostBySlug, getBlogPosts } from "@/lib/data/storefront";
 
-const BlogPostPage = ({ params }: { params: { slug: string } }) => {
-  const post = getBlogPostBySlug(params.slug);
+const BlogPostPage = async ({ params }: { params: { slug: string } }) => {
+  const post = await getBlogPostBySlug(params.slug);
 
   if (!post) {
     notFound();
@@ -49,7 +49,9 @@ const BlogPostPage = ({ params }: { params: { slug: string } }) => {
   );
 };
 
-export const generateStaticParams = () =>
-  blogPosts.map((post) => ({ slug: post.slug }));
+export const generateStaticParams = async () => {
+  const posts = await getBlogPosts();
+  return posts.map((post) => ({ slug: post.slug }));
+};
 
 export default BlogPostPage;

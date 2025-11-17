@@ -4,8 +4,9 @@ import {
   type ActivationEventSummary,
   getActivationEventsForUsers,
 } from "@/lib/activation-events";
-import { blogPosts, cmsPages } from "@/lib/data/storefront";
+import { cmsPages } from "@/lib/data/storefront";
 import {
+  blogPostsTable,
   categories,
   db,
   orderItems,
@@ -334,66 +335,71 @@ export type AdminBlogPostRow = {
   lastEditedAt: Date;
 };
 
-const blogEditorialRoadmap: AdminBlogPostRow[] = [
-  ...blogPosts.map((post) => ({
-    slug: post.slug,
-    title: post.title,
-    author: post.author,
-    excerpt: post.excerpt,
-    minutesToRead: post.minutesToRead,
-    status: "published" as const,
-    publishedAt: new Date(post.publishedAt),
-    scheduledAt: null,
-    lastEditedAt: new Date(post.publishedAt),
-  })),
-  {
-    slug: "capsule-lookbook-2026",
-    title: "Capsule Lookbook 2026",
-    author: "Editorial Studio",
-    excerpt:
-      "Preview the spring capsule narrative slated for the flagship launch.",
-    minutesToRead: 4,
-    status: "scheduled",
-    publishedAt: null,
-    scheduledAt: new Date("2025-12-15"),
-    lastEditedAt: new Date("2025-11-10"),
-  },
-  {
-    slug: "atelier-maker-notes",
-    title: "Atelier Maker Notes",
-    author: "Design Lab",
-    excerpt: "Behind-the-scenes sketches from the cushioning lab.",
-    minutesToRead: 7,
-    status: "draft",
-    publishedAt: null,
-    scheduledAt: null,
-    lastEditedAt: new Date("2025-11-05"),
-  },
-];
-
 export const getAdminBlogPosts = async ({
   search,
   status,
   limit = 50,
 }: AdminBlogPostFilters = {}): Promise<AdminBlogPostRow[]> => {
-  let rows = [...blogEditorialRoadmap];
+  const filters: SQL<unknown>[] = [];
 
-  const normalizedStatus = status && status !== "all" ? status : undefined;
+  const normalizedStatus =
+    status && status !== "all" ? (status as AdminBlogStatus) : undefined;
   if (normalizedStatus) {
-    rows = rows.filter((row) => row.status === normalizedStatus);
+    filters.push(eq(blogPostsTable.status, normalizedStatus));
   }
 
-  const trimmed = search?.trim().toLowerCase();
+  const trimmed = search?.trim();
   if (trimmed && trimmed.length > 0) {
-    rows = rows.filter((row) =>
-      [row.title, row.author, row.excerpt].some((value) =>
-        value.toLowerCase().includes(trimmed),
-      ),
+    const like = `%${trimmed}%`;
+    filters.push(
+      or(
+        ilike(blogPostsTable.title, like),
+        ilike(blogPostsTable.author, like),
+        ilike(blogPostsTable.excerpt, like),
+      )!,
     );
   }
 
-  rows.sort((a, b) => b.lastEditedAt.getTime() - a.lastEditedAt.getTime());
-  return rows.slice(0, limit);
+  const query = db
+    .select({
+      slug: blogPostsTable.slug,
+      title: blogPostsTable.title,
+      author: blogPostsTable.author,
+      excerpt: blogPostsTable.excerpt,
+      minutesToRead: blogPostsTable.minutesToRead,
+      status: blogPostsTable.status,
+      publishedAt: blogPostsTable.publishedAt,
+      scheduledAt: blogPostsTable.scheduledAt,
+      lastEditedAt: blogPostsTable.lastEditedAt,
+      updatedAt: blogPostsTable.updatedAt,
+      createdAt: blogPostsTable.createdAt,
+    })
+    .from(blogPostsTable)
+    .orderBy(desc(blogPostsTable.lastEditedAt), desc(blogPostsTable.updatedAt));
+
+  const filterExpression =
+    filters.length === 0
+      ? null
+      : filters.length === 1
+        ? filters[0]!
+        : and(filters[0]!, filters[1]!, ...filters.slice(2));
+
+  const rows = await (
+    filterExpression ? query.where(filterExpression) : query
+  ).limit(limit);
+
+  return rows.map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    author: row.author,
+    excerpt: row.excerpt,
+    minutesToRead: row.minutesToRead,
+    status: row.status as AdminBlogStatus,
+    publishedAt: row.publishedAt,
+    scheduledAt: row.scheduledAt,
+    lastEditedAt:
+      row.lastEditedAt ?? row.updatedAt ?? row.createdAt ?? new Date(),
+  }));
 };
 
 type AdminCmsStatus = "draft" | "published";

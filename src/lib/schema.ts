@@ -482,3 +482,32 @@ export const reviews = pgTable("review", {
   createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });
+
+export const blogPostStatusEnum = pgEnum("blog_post_status", [
+  "draft",
+  "scheduled",
+  "published",
+]);
+
+type BlogPostSectionRecord = {
+  heading?: string | null;
+  body?: string | null;
+};
+
+export const blogPostsTable = pgTable("blog_post", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  author: text("author").notNull(),
+  excerpt: text("excerpt").notNull(),
+  sections: jsonb("sections").$type<BlogPostSectionRecord[]>().notNull(),
+  minutesToRead: integer("minutesToRead").default(4).notNull(),
+  status: blogPostStatusEnum("status").default("draft").notNull(),
+  publishedAt: timestamp("publishedAt", { mode: "date" }),
+  scheduledAt: timestamp("scheduledAt", { mode: "date" }),
+  lastEditedAt: timestamp("lastEditedAt", { mode: "date" }).defaultNow(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+});
