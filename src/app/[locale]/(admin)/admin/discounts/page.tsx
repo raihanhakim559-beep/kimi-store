@@ -7,7 +7,8 @@ import {
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminDiscounts } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -37,9 +38,7 @@ const statusBadgeStyles: Record<string, string> = {
 
 const formatDate = (date?: Date | null) => {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-  }).format(date);
+  return formatDateValue(date, { locale: "en", dateStyle: "medium" });
 };
 
 const summarizeWindow = (start?: Date | null, end?: Date | null) => {

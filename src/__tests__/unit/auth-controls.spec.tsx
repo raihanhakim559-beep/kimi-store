@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { Session } from "next-auth";
 import React from "react";
 
@@ -23,14 +23,6 @@ jest.mock("next-auth/react", () => ({
   signOut: jest.fn(),
 }));
 
-jest.mock("next/image", () => ({
-  __esModule: true,
-  default: ({ alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} {...props} />
-  ),
-}));
-
 describe("AuthControls", () => {
   it("shows a sign-in action when no session is present", () => {
     render(<AuthControls session={null} />);
@@ -38,7 +30,7 @@ describe("AuthControls", () => {
     expect(screen.getByRole("link", { name: /signIn/i })).toBeInTheDocument();
   });
 
-  it("displays the user's name when authenticated", () => {
+  it("displays the user's info inside the dropdown", async () => {
     const session: Session = {
       user: {
         id: "user_123",
@@ -52,7 +44,15 @@ describe("AuthControls", () => {
 
     render(<AuthControls session={session} />);
 
-    expect(screen.getByText("Kai Brennan")).toBeInTheDocument();
-    expect(screen.getByText("kai@example.com")).toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: /open account menu/i });
+    fireEvent.pointerDown(trigger);
+    fireEvent.pointerUp(trigger);
+    fireEvent.click(trigger);
+
+    expect(await screen.findByText("Kai Brennan")).toBeInTheDocument();
+    expect(await screen.findByText("kai@example.com")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("menuitem", { name: /profile/i }),
+    ).toBeInTheDocument();
   });
 });

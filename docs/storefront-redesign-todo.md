@@ -11,7 +11,7 @@
 ## Page & Component Checklist
 | Priority | Route / Feature | File(s) | Status | Notes |
 | --- | --- | --- | --- | --- |
-| P0 | Global layout & header/footer system | `app/[locale]/(storefront)/layout.tsx`, shared nav/search components | ⭕ Pending | Rebuild shell with sticky nav, mobile sheet nav (shadcn `sheet`, `navigation-menu`). |
+| P0 | Global layout & header/footer system | `app/[locale]/(storefront)/layout.tsx`, shared nav/search components | ✅ Done | Sticky nav menu + mobile sheet, gradient layout, refreshed footer CTA. |
 | P0 | Home / landing | `app/[locale]/(storefront)/page.tsx` | ⭕ Pending | Replace current literal mockup copy with bespoke hero, story grid, live data highlights, shadcn cards/carousel. |
 | P0 | Catalog overview (Men) | `app/[locale]/(storefront)/men/page.tsx`, `men/[category]/page.tsx` | ⭕ Pending | Harmonize filters + tiles using `card`, `badge`, `accordion` for facets. |
 | P0 | Catalog overview (Women) | `.../women/page.tsx`, `women/[category]/page.tsx` | ⭕ Pending | Mirror men’s experience with gender-specific storytelling. |

@@ -5,14 +5,15 @@ import { ActivationRequiredPrompt } from "@/components/activation-required-promp
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getCartSummary } from "@/lib/cart";
-import { checkoutSteps } from "@/lib/data/storefront";
+import { checkoutSteps } from "@/lib/data/storefront/index";
+import { formatCurrency } from "@/lib/formatters";
 
 const formatMoney = (amountInCents: number, currency: string) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
+  formatCurrency(amountInCents / 100, {
+    locale: "en-US",
     currency,
     maximumFractionDigits: 2,
-  }).format(amountInCents / 100);
+  });
 
 type CheckoutPageProps = {
   params: Promise<{ locale: string }>;

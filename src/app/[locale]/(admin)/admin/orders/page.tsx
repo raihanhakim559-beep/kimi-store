@@ -4,7 +4,11 @@ import { updateOrderWorkflow } from "@/actions/admin/orders";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminOrders } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import {
+  formatCurrency,
+  formatDate as formatDateValue,
+} from "@/lib/formatters";
 
 const ORDER_STATUS_VALUES = [
   "pending",
@@ -55,18 +59,18 @@ const fulfillmentStatusOptions = [
 ];
 
 const formatMoney = (amountInCents: number, currency: string) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
+  formatCurrency(amountInCents / 100, {
     currency,
     maximumFractionDigits: 2,
-  }).format(amountInCents / 100);
+  });
 
 const formatDate = (date?: Date | null) => {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en", {
+  return formatDateValue(date, {
+    locale: "en",
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(date);
+  });
 };
 
 type AdminOrdersPageProps = {

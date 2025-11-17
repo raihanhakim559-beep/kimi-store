@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { Link } from "@/i18n/navigation";
-import { getBlogPostBySlug, getBlogPosts } from "@/lib/data/storefront";
+import { getBlogPostBySlug, getBlogPosts } from "@/lib/data/storefront/index";
 
 type BlogPostPageProps = {
   params: Promise<{ slug: string }>;

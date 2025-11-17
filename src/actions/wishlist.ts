@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth";
 import {
   ensureWishlistForUser,
   getDefaultVariantIdBySlug,
-} from "@/lib/data/wishlist";
+} from "@/lib/data/storefront/wishlist";
 import { db, wishlistItems } from "@/lib/schema";
 
 export const toggleWishlistItem = async (formData: FormData) => {

@@ -4,7 +4,8 @@ import { saveBlogWorkflow } from "@/actions/admin/blog";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminBlogPosts } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -29,10 +30,11 @@ const formatDate = (
   opts: Intl.DateTimeFormatOptions = {},
 ) => {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en", {
+  return formatDateValue(date, {
+    locale: "en",
     dateStyle: "medium",
-    timeStyle: opts.timeStyle ?? undefined,
-  }).format(date);
+    timeStyle: opts.timeStyle,
+  });
 };
 
 type AdminBlogPageProps = {

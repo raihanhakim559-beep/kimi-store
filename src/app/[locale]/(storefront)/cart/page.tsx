@@ -2,15 +2,14 @@ import { removeCartItem, updateCartItemQuantity } from "@/actions/cart";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { getCartSummary } from "@/lib/cart";
-
-const formatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+import { formatCurrency } from "@/lib/formatters";
 
 const formatMoney = (amountInCents: number) =>
-  formatter.format(amountInCents / 100);
+  formatCurrency(amountInCents / 100, {
+    locale: "en-US",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
 
 const CartPage = async () => {
   const { items, totals } = await getCartSummary();

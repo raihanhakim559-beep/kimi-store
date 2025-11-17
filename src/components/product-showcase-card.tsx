@@ -3,14 +3,16 @@ import { type ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
-import type { Product } from "@/lib/data/storefront";
+import { Product } from "@/lib/data/storefront/types";
+import { formatCurrency } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+const formatPrice = (value: number, currency = "USD") =>
+  formatCurrency(value, {
+    locale: "en-US",
+    currency,
+    maximumFractionDigits: 0,
+  });
 
 type ProductShowcaseCardProps = {
   product: Product;
@@ -62,9 +64,9 @@ export const ProductShowcaseCard = ({
         : "Featured");
   const specs = product.specs.slice(0, specsToShow);
   const colors = product.colors.slice(0, colorsToShow);
-  const formattedPrice = currencyFormatter.format(product.price);
+  const formattedPrice = formatPrice(product.price, product.currency);
   const formattedReferencePrice = referencePrice
-    ? currencyFormatter.format(referencePrice)
+    ? formatPrice(referencePrice, product.currency)
     : null;
 
   return (

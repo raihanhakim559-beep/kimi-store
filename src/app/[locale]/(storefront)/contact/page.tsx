@@ -1,6 +1,6 @@
 import { ContactForm } from "@/components/contact-form";
 import { routing } from "@/i18n/routing";
-import { getContactContent } from "@/lib/data/storefront";
+import { getContactContent } from "@/lib/data/storefront/index";
 import { type Locale } from "@/lib/i18n/copy";
 
 type ContactPageProps = {

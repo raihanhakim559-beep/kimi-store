@@ -3,13 +3,15 @@ import type { Metadata } from "next";
 import { SearchBar } from "@/components/search-bar";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { searchProducts } from "@/lib/data/storefront";
+import { searchProducts } from "@/lib/data/storefront/index";
+import { formatCurrency } from "@/lib/formatters";
 
-const moneyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+const formatPrice = (value: number, currency = "USD") =>
+  formatCurrency(value, {
+    locale: "en-US",
+    currency,
+    maximumFractionDigits: 2,
+  });
 
 type SearchPageProps = {
   params?: Promise<{ locale: string }>;
@@ -121,7 +123,7 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
                 </ul>
                 <div className="mt-6 flex items-center justify-between">
                   <p className="text-lg font-semibold">
-                    {moneyFormatter.format(product.price)}
+                    {formatPrice(product.price, product.currency)}
                   </p>
                   <Link
                     href={`/products/${product.slug}`}

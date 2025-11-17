@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { routing } from "@/i18n/routing";
 import { getSeoMeta } from "@/lib/data/seo";
-import { getAboutContent } from "@/lib/data/storefront";
+import { getAboutContent } from "@/lib/data/storefront/index";
 import { type Locale } from "@/lib/i18n/copy";
 
 type AboutPageProps = {

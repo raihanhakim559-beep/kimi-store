@@ -11,7 +11,7 @@ import {
 import {
   getCategoryBySlug,
   getProductsByCategory,
-} from "@/lib/data/storefront";
+} from "@/lib/data/storefront/index";
 
 type MenCategoryPageProps = {
   params: Promise<{ category: string }>;

@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getSeoMeta } from "@/lib/data/seo";
-import { getStorefrontCollections } from "@/lib/data/storefront";
+import { getStorefrontCollections } from "@/lib/data/storefront/index";
 import { type Locale } from "@/lib/i18n/copy";
 
 type SalePageProps = {

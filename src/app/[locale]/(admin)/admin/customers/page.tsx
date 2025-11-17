@@ -7,7 +7,11 @@ import {
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminCustomers } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import {
+  formatCurrency,
+  formatDate as formatDateValue,
+} from "@/lib/formatters";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -16,18 +20,19 @@ const statusOptions = [
 ];
 
 const formatMoney = (amountInCents: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
+  formatCurrency(amountInCents / 100, {
+    locale: "en-US",
     currency: "MYR",
     maximumFractionDigits: 2,
-  }).format(amountInCents / 100);
+  });
 
 const formatDate = (date?: Date | null) => {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en", {
+  return formatDateValue(date, {
+    locale: "en",
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(date);
+  });
 };
 
 type AdminCustomersPageProps = {

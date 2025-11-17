@@ -1,12 +1,22 @@
 "use client";
 
-import Image from "next/image";
+import { LogOut, Settings, UserRoundCog } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 
 type AuthControlsProps = {
   session: Session | null;
@@ -41,43 +51,72 @@ export const AuthControls = ({ session }: AuthControlsProps) => {
 
   const { user } = session;
   const initials = getInitials(user.name, user.email);
+  const avatarAlt = user.name ?? user.email ?? "Profile photo";
 
   return (
-    <div className="flex items-center gap-2 md:gap-3">
-      <Link
-        href="/account/profile"
-        className="hover:bg-muted/70 focus-visible:ring-ring flex items-center gap-2 rounded-full px-2 py-1 text-left transition focus-visible:ring focus-visible:outline-none"
-      >
-        {user.image ? (
-          <Image
-            className="rounded-full border"
-            src={user.image}
-            alt={user.name ?? user.email ?? "Profile photo"}
-            width={40}
-            height={40}
-          />
-        ) : (
-          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold uppercase">
-            {initials}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "icon" }),
+            "rounded-full border",
+          )}
+          aria-label="Open account menu"
+        >
+          <Avatar className="border">
+            <AvatarImage src={user.image ?? undefined} alt={avatarAlt} />
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold uppercase">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-fit">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <Avatar className="size-10 border">
+            <AvatarImage src={user.image ?? undefined} alt={avatarAlt} />
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold uppercase">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm leading-tight font-semibold">
+              {user.name ?? "Your account"}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {user.email ?? "View profile"}
+            </p>
           </div>
-        )}
-        <div className="hidden min-w-[140px] text-left md:block">
-          <p className="text-sm leading-tight font-semibold">
-            {user.name ?? "Your account"}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {user.email ?? "View profile"}
-          </p>
         </div>
-      </Link>
-      <Button
-        variant="outline"
-        size="sm"
-        className="hidden sm:inline-flex"
-        onClick={() => signOut({ callbackUrl: "/" })}
-      >
-        {t("signOut")}
-      </Button>
-    </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href="/account/profile" className="flex items-center gap-2">
+              <Settings className="size-4" />
+              <span>Profile</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/account/dashboard" className="flex items-center gap-2">
+              <UserRoundCog className="size-4" />
+              <span>Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault();
+            void signOut({ callbackUrl: "/" });
+          }}
+          variant="destructive"
+          className="flex items-center gap-2"
+        >
+          <LogOut className="size-4" />
+          <span>{t("signOut")}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

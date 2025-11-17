@@ -10,7 +10,8 @@ import {
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminCmsPages, getAdminCmsSections } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -30,7 +31,7 @@ const isCmsStatusFilter = (value: string): value is CmsStatusFilter =>
   cmsStatusFilterValues.includes(value as CmsStatusFilter);
 
 const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);
+  formatDateValue(date, { locale: "en", dateStyle: "medium" });
 
 type AdminCmsPageProps = {
   params: Promise<{ locale: string }>;
@@ -399,8 +400,8 @@ const AdminCmsPage = async ({ params, searchParams }: AdminCmsPageProps) => {
                 </p>
               ) : (
                 contactSections.map((section) => {
-                  const label = getCopyValue(section.title, locale);
-                  const description = getCopyValue(section.body, locale);
+                  const label = getCopyValue(section.title);
+                  const description = getCopyValue(section.body);
                   const value = getMetadataValue(section.metadata);
                   return (
                     <div
@@ -495,8 +496,8 @@ const AdminCmsPage = async ({ params, searchParams }: AdminCmsPageProps) => {
               </p>
             ) : (
               faqSections.map((section) => {
-                const question = getCopyValue(section.title, locale);
-                const answer = getCopyValue(section.body, locale);
+                const question = getCopyValue(section.title);
+                const answer = getCopyValue(section.body);
                 return (
                   <div
                     key={section.id}

@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { getBlogPosts } from "@/lib/data/storefront";
+import { getBlogPosts } from "@/lib/data/storefront/index";
 
 const BlogPage = async () => {
   const blogPosts = await getBlogPosts();

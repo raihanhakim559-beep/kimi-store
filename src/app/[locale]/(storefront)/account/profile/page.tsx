@@ -7,6 +7,7 @@ import { ResendVerificationButton } from "@/components/resend-verification-butto
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 import { accounts, addresses, db, users } from "@/lib/schema";
 
 const formatDateTime = (value?: Date | null) => {
@@ -14,10 +15,11 @@ const formatDateTime = (value?: Date | null) => {
     return "Not verified";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return formatDateValue(value, {
+    locale: "en-US",
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  });
 };
 
 const getInitials = (name?: string | null, email?: string | null) => {

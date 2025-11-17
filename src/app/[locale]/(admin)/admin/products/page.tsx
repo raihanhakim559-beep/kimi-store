@@ -7,7 +7,8 @@ import {
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminCategories, getAdminProducts } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import { formatCurrency } from "@/lib/formatters";
 
 const PRODUCT_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
@@ -23,11 +24,10 @@ const statusBadgeClasses: Record<string, string> = {
 };
 
 const formatMoney = (amountInCents: number, currency: string) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
+  formatCurrency(amountInCents / 100, {
     currency,
     maximumFractionDigits: 2,
-  }).format(amountInCents / 100);
+  });
 
 const formatRelativeTime = (date?: Date | null) => {
   if (!date) return "—";

@@ -8,7 +8,8 @@ import {
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminUsers } from "@/lib/data/admin";
-import { getAdminModuleBySlug } from "@/lib/data/storefront";
+import { getAdminModuleBySlug } from "@/lib/data/storefront/index";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 
 const roleOptions = [
   { value: "all", label: "All roles" },
@@ -43,10 +44,11 @@ const isStatusFilter = (value: string): value is StatusFilter =>
 
 const formatDate = (date?: Date | null) => {
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en", {
+  return formatDateValue(date, {
+    locale: "en",
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(date);
+  });
 };
 
 type AdminUsersPageProps = {

@@ -6,7 +6,8 @@ import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getSeoMeta } from "@/lib/data/seo";
-import { getStorefrontCollections } from "@/lib/data/storefront";
+import { getStorefrontCollections } from "@/lib/data/storefront/index";
+import { formatDate as formatDateValue } from "@/lib/formatters";
 import { type Locale } from "@/lib/i18n/copy";
 
 type NewArrivalsPageProps = {
@@ -30,10 +31,12 @@ const NewArrivalsPage = async () => {
   const { newArrivals: arrivals } = await getStorefrontCollections();
 
   const featuredDrop = arrivals[0];
-  const dateFormatter = new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-  });
+  const formatShipDate = (value: string | Date) =>
+    formatDateValue(value, {
+      locale: "en",
+      month: "short",
+      day: "numeric",
+    });
 
   return (
     <div className="space-y-16 pb-12">
@@ -123,7 +126,7 @@ const NewArrivalsPage = async () => {
               ))}
             </div>
             <p className="text-muted-foreground text-sm">
-              Ships {dateFormatter.format(new Date(featuredDrop.createdAt))}
+              Ships {formatShipDate(featuredDrop.createdAt)}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -172,8 +175,8 @@ const NewArrivalsPage = async () => {
               product={product}
               variant="new"
               href={`/products/${product.slug}`}
-              highlight={`Ships ${dateFormatter.format(
-                new Date(product.createdAt ?? new Date()),
+              highlight={`Ships ${formatShipDate(
+                product.createdAt ?? new Date(),
               )}`}
             />
           ))}

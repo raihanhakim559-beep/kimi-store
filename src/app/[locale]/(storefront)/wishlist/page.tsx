@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
-import { wishlistCopy } from "@/lib/data/storefront";
-import { getWishlistEntries } from "@/lib/data/wishlist";
+import { wishlistCopy } from "@/lib/data/storefront/index";
+import { getWishlistEntries } from "@/lib/data/storefront/wishlist";
 
 const WishlistPage = async () => {
   const session = await auth();

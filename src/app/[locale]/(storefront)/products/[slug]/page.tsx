@@ -9,24 +9,29 @@ import { Link } from "@/i18n/navigation";
 import {
   getProductDetailBySlug,
   getProductReviews,
-} from "@/lib/data/storefront";
+} from "@/lib/data/storefront/index";
+import {
+  formatCurrency,
+  formatDate as formatDateValue,
+} from "@/lib/formatters";
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
+const formatReviewDate = (value: string | Date) =>
+  formatDateValue(value, { locale: "en", dateStyle: "medium" });
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+const formatReleaseDate = (value?: string | Date | null) =>
+  formatDateValue(value ?? new Date(), {
+    locale: "en",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
-const releaseDateFormatter = new Intl.DateTimeFormat("en", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
+const formatProductPrice = (value: number, currency = "USD") =>
+  formatCurrency(value, {
+    locale: "en-US",
+    currency,
+    maximumFractionDigits: 0,
+  });
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -55,10 +60,8 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
     ? reviews.reduce((total, review) => total + review.rating, 0) /
       reviews.length
     : 0;
-  const formattedPrice = currencyFormatter.format(product.price);
-  const releaseLabel = releaseDateFormatter.format(
-    new Date(product.createdAt ?? new Date()),
-  );
+  const formattedPrice = formatProductPrice(product.price, product.currency);
+  const releaseLabel = formatReleaseDate(product.createdAt ?? new Date());
   const specHighlights = product.specs.slice(0, 4);
 
   return (
@@ -194,7 +197,7 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
                 <div className="flex items-center justify-between">
                   <p className="font-semibold">{review.author}</p>
                   <p className="text-muted-foreground text-xs">
-                    {formatDate(review.createdAt)}
+                    {formatReviewDate(review.createdAt)}
                   </p>
                 </div>
                 <p className="mt-1 text-sm text-yellow-500">

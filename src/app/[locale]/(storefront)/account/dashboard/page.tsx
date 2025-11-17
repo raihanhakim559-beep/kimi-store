@@ -1,6 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { getDashboardTimeline } from "@/lib/data/storefront";
+import { getDashboardTimeline } from "@/lib/data/storefront/index";
 
 const AccountDashboardPage = async () => {
   const dashboardTimeline = await getDashboardTimeline();
