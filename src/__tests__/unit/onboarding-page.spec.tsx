@@ -39,16 +39,8 @@ describe("AccountOnboardingPage", () => {
     jest.clearAllMocks();
   });
 
-  it("restores a token for logged-in users when the URL is missing it", async () => {
+  it("requires the secure token link when opening onboarding", async () => {
     (auth as jest.Mock).mockResolvedValue({ user: { id: "user_1" } });
-    (getActiveOnboardingTokenForUser as jest.Mock).mockResolvedValue(
-      "token_abc",
-    );
-    (getUserForOnboardingToken as jest.Mock).mockResolvedValue({
-      id: "user_1",
-      name: "Kai Brennan",
-      email: "kai@example.com",
-    });
 
     const page = await AccountOnboardingPage({
       params: { locale: "en" },
@@ -57,12 +49,8 @@ describe("AccountOnboardingPage", () => {
 
     render(page as React.ReactElement);
 
-    expect(getActiveOnboardingTokenForUser).toHaveBeenCalledWith("user_1");
-    expect(screen.getByText(/Confirm your details/i)).toBeInTheDocument();
-    expect(screen.getAllByDisplayValue("Kai Brennan")).toHaveLength(2);
-    expect(
-      screen.getByText(/automatically use the profile photo from your/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Activation link missing/i)).toBeInTheDocument();
+    expect(getActiveOnboardingTokenForUser).not.toHaveBeenCalled();
   });
 
   it("displays an activation notice when redirected from the storefront", async () => {
@@ -78,7 +66,7 @@ describe("AccountOnboardingPage", () => {
 
     const page = await AccountOnboardingPage({
       params: { locale: "en" },
-      searchParams: { notice: "activation" },
+      searchParams: { notice: "activation", token: "token_xyz" },
     });
 
     render(page as React.ReactElement);

@@ -390,7 +390,7 @@ export default async function HomePage({
   const session = await auth();
 
   if (session?.user && !session.user.isActive) {
-    redirect(`/${activeLocale}/account/onboarding?notice=activation`);
+    redirect(`/${activeLocale}/account/onboarding/email-sent`);
   }
 
   const [{ men, women, newArrivals, sale }, blogPosts] = await Promise.all([

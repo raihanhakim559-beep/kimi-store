@@ -1,5 +1,14 @@
 import { completeOnboarding } from "@/actions/onboarding";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Link } from "@/i18n/navigation";
 import { auth } from "@/lib/auth";
 import {
@@ -67,20 +76,11 @@ const AccountOnboardingPage = async ({
   const showActivationNotice =
     typeof noticeParam === "string" && noticeParam === "activation";
 
-  const ensureSession = async () => auth();
-
   if (!token) {
-    const currentSession = await ensureSession();
-    const userId = currentSession?.user?.id;
-
-    if (userId) {
-      token = await getActiveOnboardingTokenForUser(userId);
-    }
-
-    if (!token) {
-      return <MissingTokenState locale={locale} />;
-    }
+    return <MissingTokenState locale={locale} />;
   }
+
+  const ensureSession = async () => auth();
 
   let pendingUser = await getUserForOnboardingToken(token);
 
@@ -105,6 +105,21 @@ const AccountOnboardingPage = async ({
   const safeName = pendingUser.name ?? "";
   const bannerEmail = pendingUser.email ?? "your inbox";
 
+  const steps = [
+    {
+      title: "Profile",
+      description: "Tell us how to address and contact you.",
+    },
+    {
+      title: "Shipping",
+      description: "Set the default address we can use at checkout.",
+    },
+    {
+      title: "Agreement",
+      description: "Review policies and activate the account.",
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       {showActivationNotice && (
@@ -112,9 +127,9 @@ const AccountOnboardingPage = async ({
           <p className="text-base font-semibold">Activation email sent</p>
           <p>
             We emailed a secure onboarding link to{" "}
-            <span className="font-semibold">{bannerEmail}</span>. Keep this tab
-            open and finish the form below to activate your account without
-            waiting on the inbox message.
+            <span className="font-semibold">{bannerEmail}</span>. Stay on this
+            tab and complete the form after opening that email so we can verify
+            your account.
           </p>
         </div>
       )}
@@ -124,65 +139,71 @@ const AccountOnboardingPage = async ({
         </p>
         <h1 className="mt-4 text-4xl font-semibold">Confirm your details</h1>
         <p className="text-muted-foreground mt-4 text-sm">
-          Enter your contact info, default shipping address, and accept the
-          customer agreement to activate your Kimi Store account.
+          Move through each step below to finish onboarding in a single session.
         </p>
       </header>
-      <form
-        action={completeOnboarding}
-        className="space-y-6 rounded-3xl border p-8"
-      >
+      <ol className="grid gap-4 sm:grid-cols-3">
+        {steps.map((step, index) => (
+          <li key={step.title} className="rounded-2xl border p-4">
+            <Badge variant="secondary" className="text-xs">
+              Step {index + 1}
+            </Badge>
+            <p className="mt-3 text-lg font-semibold">{step.title}</p>
+            <p className="text-muted-foreground text-sm">{step.description}</p>
+          </li>
+        ))}
+      </ol>
+      <form action={completeOnboarding} className="space-y-6">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="locale" value={locale} />
-        <section className="space-y-4">
-          {recoveredFromExpiredLink && (
-            <p className="text-xs text-amber-600">
-              Your previous activation link expired, but we restored the latest
-              one automatically.
-            </p>
-          )}
-          <div>
-            <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
-              Profile
-            </p>
-            <h2 className="text-2xl font-semibold">Contact details</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              We&apos;ll automatically use the profile photo from your Google or
-              GitHub account.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Full name</span>
-              <input
-                className={inputClass}
-                name="name"
-                defaultValue={safeName}
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Email</span>
-              <input
-                className={cn(inputClass, "bg-muted/40")}
-                defaultValue={pendingUser.email ?? ""}
-                disabled
-              />
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Phone</span>
-              <input className={inputClass} name="phone" required />
-            </label>
-          </div>
-        </section>
-        <section className="space-y-4">
-          <div>
-            <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
-              Shipping
-            </p>
-            <h2 className="text-2xl font-semibold">Default address</h2>
-          </div>
-          <div className="grid gap-4">
+        {recoveredFromExpiredLink && (
+          <p className="text-xs text-amber-600">
+            Your previous activation link expired, but we restored the latest
+            one automatically.
+          </p>
+        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 1 · Profile</CardTitle>
+            <CardDescription>
+              Basic contact details so we know who&apos;s activating the
+              account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Full name</span>
+                <input
+                  className={inputClass}
+                  name="name"
+                  defaultValue={safeName}
+                  required
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Email</span>
+                <input
+                  className={cn(inputClass, "bg-muted/40")}
+                  defaultValue={pendingUser.email ?? ""}
+                  disabled
+                />
+              </label>
+              <label className="space-y-1 text-sm md:col-span-2">
+                <span className="text-muted-foreground">Phone</span>
+                <input className={inputClass} name="phone" required />
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 2 · Shipping</CardTitle>
+            <CardDescription>
+              We&apos;ll store this address for future orders and receipts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Recipient name</span>
               <input
@@ -226,22 +247,30 @@ const AccountOnboardingPage = async ({
                 />
               </label>
             </div>
-          </div>
-        </section>
-        <section className="space-y-4">
-          <label className="flex items-center gap-3 text-sm">
-            <input type="checkbox" name="acceptTerms" required />
-            <span>
-              I agree to the customer terms, privacy policy, and shipping
-              policies. I consent to receiving transactional communications.
-            </span>
-          </label>
-          <button
-            className={buttonVariants({ size: "lg", className: "w-full" })}
-          >
-            Activate account
-          </button>
-        </section>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 3 · Agreements</CardTitle>
+            <CardDescription>
+              Accept the customer terms to activate your membership.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-3 text-sm">
+              <input type="checkbox" name="acceptTerms" required />
+              <span>
+                I agree to the terms, privacy policy, and shipping policies.
+              </span>
+            </label>
+            <Separator />
+            <button
+              className={buttonVariants({ size: "lg", className: "w-full" })}
+            >
+              Activate account
+            </button>
+          </CardContent>
+        </Card>
       </form>
     </div>
   );
