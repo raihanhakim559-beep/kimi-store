@@ -10,6 +10,13 @@ export type Category = {
   features: string[];
 };
 
+export type ProductImage = {
+  id: string;
+  url: string;
+  alt?: string | null;
+  isPrimary: boolean;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -23,6 +30,7 @@ export type Product = {
   specs: string[];
   colors: string[];
   createdAt: Date;
+  coverImage?: ProductImage;
 };
 
 export type ProductVariantOption = {
@@ -32,13 +40,6 @@ export type ProductVariantOption = {
   stock: number;
   priceOverride?: number | null;
   isDefault: boolean;
-};
-
-export type ProductImage = {
-  id: string;
-  url: string;
-  alt?: string | null;
-  isPrimary: boolean;
 };
 
 export type ProductDetail = Product & {

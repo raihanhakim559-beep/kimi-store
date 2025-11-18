@@ -109,19 +109,22 @@ const mapCategoryRecord = (record: {
   } satisfies Category;
 };
 
-const mapProductRecord = (record: {
-  id: string;
-  slug: string;
-  name: string;
-  summary: string | null;
-  description: string | null;
-  price: number;
-  currency: string;
-  metadata: ProductRow["metadata"];
-  categorySlug: string;
-  gender: CategoryRow["gender"];
-  createdAt: Date;
-}): Product => {
+const mapProductRecord = (
+  record: {
+    id: string;
+    slug: string;
+    name: string;
+    summary: string | null;
+    description: string | null;
+    price: number;
+    currency: string;
+    metadata: ProductRow["metadata"];
+    categorySlug: string;
+    gender: CategoryRow["gender"];
+    createdAt: Date;
+  },
+  coverImage?: ProductImage,
+): Product => {
   const metadata = parseProductMetadata(record.metadata);
   const badge = metadata.badges?.find(
     (value): value is ProductStatus => value === "sale" || value === "new",
@@ -140,6 +143,7 @@ const mapProductRecord = (record: {
     specs: metadata.specs ?? [],
     colors: metadata.colors ?? [],
     createdAt: record.createdAt,
+    coverImage,
   } satisfies Product;
 };
 
@@ -207,7 +211,37 @@ const selectActiveProducts = async (options: ProductQueryOptions = {}) => {
   const rows = await (typeof options.limit === "number"
     ? baseQuery.limit(options.limit)
     : baseQuery);
-  return rows.map(mapProductRecord);
+
+  const productIds = rows.map((row) => row.id);
+  const coverImages = new Map<string, ProductImage>();
+
+  if (productIds.length > 0) {
+    const imageRows = await db
+      .select({
+        id: productImages.id,
+        productId: productImages.productId,
+        url: productImages.url,
+        alt: productImages.alt,
+        isPrimary: productImages.isPrimary,
+        position: productImages.position,
+      })
+      .from(productImages)
+      .where(inArray(productImages.productId, productIds))
+      .orderBy(desc(productImages.isPrimary), productImages.position);
+
+    imageRows.forEach((image) => {
+      if (!coverImages.has(image.productId)) {
+        coverImages.set(image.productId, {
+          id: image.id,
+          url: image.url,
+          alt: image.alt,
+          isPrimary: image.isPrimary,
+        });
+      }
+    });
+  }
+
+  return rows.map((row) => mapProductRecord(row, coverImages.get(row.id)));
 };
 
 const fetchAllActiveProducts = cache(async () => selectActiveProducts());
@@ -403,8 +437,6 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
     return null;
   }
 
-  const baseProduct = mapProductRecord(productRow);
-
   const variantRows = await db
     .select({
       id: productVariants.id,
@@ -441,10 +473,12 @@ export const getProductDetailBySlug = cache(async (slug: string) => {
         {
           id: `${productRow.id}-fallback`,
           url: `/opengraph-image.jpg`,
-          alt: `${baseProduct.title} preview`,
+          alt: `${productRow.name} preview`,
           isPrimary: true,
         },
       ];
+
+  const baseProduct = mapProductRecord(productRow, gallery[0]);
 
   const relatedPool = await selectActiveProducts({
     where: eq(categories.slug, productRow.categorySlug),

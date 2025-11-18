@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { type ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -68,6 +69,7 @@ export const ProductShowcaseCard = ({
   const formattedReferencePrice = referencePrice
     ? formatPrice(referencePrice, product.currency)
     : null;
+  const coverImage = product.coverImage;
 
   return (
     <article
@@ -86,6 +88,27 @@ export const ProductShowcaseCard = ({
         </span>
       </div>
       <h3 className="mt-3 text-2xl font-semibold">{product.title}</h3>
+      <Link
+        href={href}
+        className="bg-muted/30 mt-4 block overflow-hidden rounded-[1.8rem] border"
+        aria-label={`View ${product.title}`}
+      >
+        <div className="relative aspect-[4/3]">
+          {coverImage ? (
+            <Image
+              src={coverImage.url}
+              alt={coverImage.alt ?? `${product.title} preview`}
+              fill
+              className="object-cover transition duration-300 hover:scale-105"
+              sizes="(min-width: 1024px) 420px, 100vw"
+            />
+          ) : (
+            <div className="text-muted-foreground/70 grid h-full place-items-center text-[11px] font-semibold tracking-[0.4em] uppercase">
+              Visual coming soon
+            </div>
+          )}
+        </div>
+      </Link>
       <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
         {product.description}
       </p>

@@ -52,6 +52,8 @@ export type AdminProductRow = {
   categorySlug?: string | null;
   inventory: number;
   variantCount: number;
+  coverImageUrl?: string | null;
+  coverImageAlt?: string | null;
 };
 
 export type AdminCategoryFilters = {

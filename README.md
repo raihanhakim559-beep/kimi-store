@@ -36,6 +36,12 @@ Open `http://localhost:3000/en` (or `/ms`) to browse the storefront. Admin route
 
 Add environment variables by copying `.env.example` → `.env` and filling the values required by `src/env.mjs` (Stripe keys, NextAuth secrets, etc.).
 
+### 📸 Product media uploads
+- Generate an UploadThing app + secret, then set `UPLOADTHING_APP_ID` and `UPLOADTHING_SECRET` in `.env` (they are validated via `src/env.mjs`).
+- Restart `npm run dev` so the `/api/uploadthing` route picks up the new keys.
+- Visit `/en/admin/products` and use the **Upload** control in the catalog table to attach JPG/PNG files (4MB max) to any product.
+- The first image automatically becomes the primary cover and now renders on product cards, detail galleries, and wishlist surfaces.
+
 ### 🔔 Activation CRM automation
 - Every activation email, reminder, override, and completion is tracked in the `activation_event` table so the admin Customers module displays outreach counts and timestamps.
 - Configure the protected reminder endpoint to keep inactive users warm:

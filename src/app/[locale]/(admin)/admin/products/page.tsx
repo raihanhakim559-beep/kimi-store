@@ -4,6 +4,7 @@ import {
   createAdminProduct,
   updateProductStatus,
 } from "@/actions/admin/products";
+import { ProductImageUploader } from "@/components/admin/product-image-uploader";
 import { AdminModuleTemplate } from "@/components/admin-module-template";
 import { buttonVariants } from "@/components/ui/button";
 import { getAdminCategories, getAdminProducts } from "@/lib/data/admin";
@@ -191,6 +192,7 @@ const AdminProductsPage = async ({
                   <thead>
                     <tr className="border-b border-white/10 text-xs text-slate-400 uppercase">
                       <th className="py-2 pr-4 text-left">Product</th>
+                      <th className="py-2 pr-4 text-left">Media</th>
                       <th className="py-2 pr-4 text-left">Category</th>
                       <th className="py-2 pr-4 text-left">Status</th>
                       <th className="py-2 pr-4 text-right">Price</th>
@@ -214,6 +216,14 @@ const AdminProductsPage = async ({
                               /{product.slug}
                             </p>
                           </div>
+                        </td>
+                        <td className="py-3 pr-4 align-top">
+                          <ProductImageUploader
+                            productId={product.id}
+                            productName={product.name}
+                            coverImageUrl={product.coverImageUrl}
+                            coverImageAlt={product.coverImageAlt}
+                          />
                         </td>
                         <td className="py-3 pr-4 align-top text-slate-300">
                           {product.categoryName ?? "—"}
