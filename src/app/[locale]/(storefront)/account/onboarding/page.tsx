@@ -131,6 +131,10 @@ const AccountOnboardingPage = async ({
               Profile
             </p>
             <h2 className="text-2xl font-semibold">Contact details</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              We&apos;ll automatically use the profile photo from your Google or
+              GitHub account.
+            </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-1 text-sm">
@@ -140,15 +144,6 @@ const AccountOnboardingPage = async ({
                 name="name"
                 defaultValue={safeName}
                 required
-              />
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Profile photo URL</span>
-              <input
-                className={inputClass}
-                name="image"
-                placeholder="https://..."
-                type="url"
               />
             </label>
             <label className="space-y-1 text-sm">

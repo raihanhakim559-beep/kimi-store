@@ -60,6 +60,9 @@ describe("AccountOnboardingPage", () => {
     expect(getActiveOnboardingTokenForUser).toHaveBeenCalledWith("user_1");
     expect(screen.getByText(/Confirm your details/i)).toBeInTheDocument();
     expect(screen.getAllByDisplayValue("Kai Brennan")).toHaveLength(2);
+    expect(
+      screen.getByText(/automatically use the profile photo from your/i),
+    ).toBeInTheDocument();
   });
 
   it("shows recovery notice when an expired link is refreshed", async () => {

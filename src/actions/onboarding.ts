@@ -18,7 +18,6 @@ const onboardingSchema = z.object({
   token: z.string().min(10),
   locale: z.string().min(2),
   name: z.string().min(2).max(80),
-  image: z.string().url().optional().or(z.literal("")),
   phone: z.string().min(6).max(30),
   fullName: z.string().min(2).max(80),
   line1: z.string().min(3).max(120),
@@ -35,7 +34,6 @@ export const completeOnboarding = async (formData: FormData) => {
     token: formData.get("token"),
     locale: formData.get("locale"),
     name: formData.get("name"),
-    image: formData.get("image"),
     phone: formData.get("phone"),
     fullName: formData.get("fullName"),
     line1: formData.get("line1"),
@@ -62,7 +60,6 @@ export const completeOnboarding = async (formData: FormData) => {
     .update(users)
     .set({
       name: data.name.trim(),
-      image: data.image?.trim() || null,
       phone: data.phone.trim(),
       hasAcceptedTerms: true,
       isActive: true,
