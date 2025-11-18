@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { completeOnboarding } from "@/actions/onboarding";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -28,6 +30,26 @@ type OnboardingPageProps = {
       >
     | ({ token?: string } | Record<string, string | string[] | undefined>);
 };
+
+type StepCardProps = {
+  step: number;
+  title: string;
+  description: string;
+  children: ReactNode;
+};
+
+const StepCard = ({ step, title, description, children }: StepCardProps) => (
+  <Card>
+    <CardHeader>
+      <Badge variant="secondary" className="w-fit text-xs tracking-widest">
+        Step {step}
+      </Badge>
+      <CardTitle className="mt-2 text-2xl font-semibold">{title}</CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">{children}</CardContent>
+  </Card>
+);
 
 const MissingTokenState = ({ locale }: { locale: string }) => (
   <div className="space-y-4 rounded-3xl border p-8 text-center">
@@ -105,40 +127,56 @@ const AccountOnboardingPage = async ({
   const safeName = pendingUser.name ?? "";
   const bannerEmail = pendingUser.email ?? "your inbox";
 
-  const steps = [
+  const stepSummaries = [
     {
       title: "Profile",
-      description: "Tell us how to address and contact you.",
+      helper: "Tell us how to address and contact you.",
     },
     {
       title: "Shipping",
-      description: "Set the default address we can use at checkout.",
+      helper: "Save a default address for checkout.",
     },
     {
       title: "Agreement",
-      description: "Review policies and activate the account.",
+      helper: "Accept policies and activate membership.",
     },
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-6 lg:space-y-8">
+      {showActivationNotice && (
+        <Card className="border-emerald-200 bg-emerald-50">
+          <CardHeader className="space-y-2">
+            <Badge variant="secondary" className="w-fit text-emerald-900">
+              Email sent
+            </Badge>
+            <CardTitle className="text-emerald-900">
+              Check {bannerEmail}
+            </CardTitle>
+            <CardDescription className="text-emerald-900">
+              We just sent a secure onboarding link. Keep this tab open and open
+              the link in your inbox to validate the session.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
       <header className="bg-muted/40 rounded-3xl border p-8">
         <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
           Onboarding
         </p>
         <h1 className="mt-4 text-4xl font-semibold">Confirm your details</h1>
         <p className="text-muted-foreground mt-4 text-sm">
-          Move through each step below to finish onboarding in a single session.
+          Complete each step below to unlock your account and checkout access.
         </p>
       </header>
       <ol className="grid gap-4 sm:grid-cols-3">
-        {steps.map((step, index) => (
+        {stepSummaries.map((step, index) => (
           <li key={step.title} className="rounded-2xl border p-4">
-            <Badge variant="secondary" className="text-xs">
+            <p className="text-muted-foreground text-xs font-semibold tracking-[0.3em] uppercase">
               Step {index + 1}
-            </Badge>
-            <p className="mt-3 text-lg font-semibold">{step.title}</p>
-            <p className="text-muted-foreground text-sm">{step.description}</p>
+            </p>
+            <p className="mt-2 text-lg font-semibold">{step.title}</p>
+            <p className="text-muted-foreground text-sm">{step.helper}</p>
           </li>
         ))}
       </ol>
@@ -151,48 +189,41 @@ const AccountOnboardingPage = async ({
             one automatically.
           </p>
         )}
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 1 · Profile</CardTitle>
-            <CardDescription>
-              Basic contact details so we know who&apos;s activating the
-              account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-1 text-sm">
-                <span className="text-muted-foreground">Full name</span>
-                <input
-                  className={inputClass}
-                  name="name"
-                  defaultValue={safeName}
-                  required
-                />
-              </label>
-              <label className="space-y-1 text-sm">
-                <span className="text-muted-foreground">Email</span>
-                <input
-                  className={cn(inputClass, "bg-muted/40")}
-                  defaultValue={pendingUser.email ?? ""}
-                  disabled
-                />
-              </label>
-              <label className="space-y-1 text-sm md:col-span-2">
-                <span className="text-muted-foreground">Phone</span>
-                <input className={inputClass} name="phone" required />
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 2 · Shipping</CardTitle>
-            <CardDescription>
-              We&apos;ll store this address for future orders and receipts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <StepCard
+          step={1}
+          title="Profile"
+          description="Basic contact details so we know who's activating the account."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Full name</span>
+              <input
+                className={inputClass}
+                name="name"
+                defaultValue={safeName}
+                required
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Email</span>
+              <input
+                className={cn(inputClass, "bg-muted/40")}
+                defaultValue={pendingUser.email ?? ""}
+                disabled
+              />
+            </label>
+            <label className="space-y-1 text-sm md:col-span-2">
+              <span className="text-muted-foreground">Phone</span>
+              <input className={inputClass} name="phone" required />
+            </label>
+          </div>
+        </StepCard>
+        <StepCard
+          step={2}
+          title="Shipping"
+          description="We'll store this address for future orders and receipts."
+        >
+          <div className="space-y-4">
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Recipient name</span>
               <input
@@ -236,30 +267,26 @@ const AccountOnboardingPage = async ({
                 />
               </label>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 3 · Agreements</CardTitle>
-            <CardDescription>
-              Accept the customer terms to activate your membership.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <label className="flex items-center gap-3 text-sm">
-              <input type="checkbox" name="acceptTerms" required />
-              <span>
-                I agree to the terms, privacy policy, and shipping policies.
-              </span>
-            </label>
-            <Separator />
-            <button
-              className={buttonVariants({ size: "lg", className: "w-full" })}
-            >
-              Activate account
-            </button>
-          </CardContent>
-        </Card>
+          </div>
+        </StepCard>
+        <StepCard
+          step={3}
+          title="Agreements"
+          description="Review the customer terms and activate your membership."
+        >
+          <label className="flex items-center gap-3 text-sm">
+            <input type="checkbox" name="acceptTerms" required />
+            <span>
+              I agree to the terms, privacy policy, and shipping policies.
+            </span>
+          </label>
+          <Separator />
+          <button
+            className={buttonVariants({ size: "lg", className: "w-full" })}
+          >
+            Activate account
+          </button>
+        </StepCard>
       </form>
     </div>
   );

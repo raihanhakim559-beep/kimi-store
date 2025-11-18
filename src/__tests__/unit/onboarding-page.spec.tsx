@@ -71,8 +71,8 @@ describe("AccountOnboardingPage", () => {
 
     render(page as React.ReactElement);
 
-    expect(screen.getByText(/Activation email sent/i)).toBeInTheDocument();
-    expect(screen.getByText(/kai@example.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/Email sent/i)).toBeInTheDocument();
+    expect(screen.getByText(/Check\s+kai@example.com/i)).toBeInTheDocument();
   });
 
   it("shows recovery notice when an expired link is refreshed", async () => {
