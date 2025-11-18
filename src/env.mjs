@@ -19,7 +19,7 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1).optional(),
     RESEND_FROM_EMAIL: z.string().email().optional(),
     ONBOARDING_CRON_SECRET: z.string().min(1).optional(),
-    UPLOADTHING_SECRET: z.string().min(1),
+    UPLOADTHING_TOKEN: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
@@ -43,7 +43,7 @@ export const env = createEnv({
   ONBOARDING_CRON_SECRET: process.env.ONBOARDING_CRON_SECRET,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET,
+    UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
     UPLOADTHING_APP_ID: process.env.UPLOADTHING_APP_ID,
   },
 });
