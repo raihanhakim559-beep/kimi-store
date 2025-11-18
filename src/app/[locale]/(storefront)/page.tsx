@@ -1,4 +1,5 @@
 import { ArrowUpRight, Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
 import { Locale } from "next-intl";
 
 import { CollectionFilterChips } from "@/components/collection-filter-chips";
@@ -13,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
+import { auth } from "@/lib/auth";
 import {
   type Category,
   getBlogPosts,
@@ -385,6 +387,11 @@ export default async function HomePage({
 }) {
   const { locale: localeParam } = await params;
   const activeLocale = localeParam as CopyLocale;
+  const session = await auth();
+
+  if (session?.user && !session.user.isActive) {
+    redirect(`/${activeLocale}/account/onboarding?notice=activation`);
+  }
 
   const [{ men, women, newArrivals, sale }, blogPosts] = await Promise.all([
     getStorefrontCollections(),

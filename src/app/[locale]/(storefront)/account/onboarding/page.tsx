@@ -61,8 +61,11 @@ const AccountOnboardingPage = async ({
     searchParams ?? {},
   )) as Record<string, string | string[] | undefined>;
   const tokenParam = resolvedSearchParams?.token;
+  const noticeParam = resolvedSearchParams?.notice;
   let token = typeof tokenParam === "string" ? tokenParam : null;
   let recoveredFromExpiredLink = false;
+  const showActivationNotice =
+    typeof noticeParam === "string" && noticeParam === "activation";
 
   const ensureSession = async () => auth();
 
@@ -100,9 +103,21 @@ const AccountOnboardingPage = async ({
   }
 
   const safeName = pendingUser.name ?? "";
+  const bannerEmail = pendingUser.email ?? "your inbox";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
+      {showActivationNotice && (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <p className="text-base font-semibold">Activation email sent</p>
+          <p>
+            We emailed a secure onboarding link to{" "}
+            <span className="font-semibold">{bannerEmail}</span>. Keep this tab
+            open and finish the form below to activate your account without
+            waiting on the inbox message.
+          </p>
+        </div>
+      )}
       <header className="bg-muted/40 rounded-3xl border p-8">
         <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
           Onboarding

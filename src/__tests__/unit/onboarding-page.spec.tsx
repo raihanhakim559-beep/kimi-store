@@ -65,6 +65,28 @@ describe("AccountOnboardingPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("displays an activation notice when redirected from the storefront", async () => {
+    (auth as jest.Mock).mockResolvedValue({ user: { id: "user_1" } });
+    (getActiveOnboardingTokenForUser as jest.Mock).mockResolvedValue(
+      "token_xyz",
+    );
+    (getUserForOnboardingToken as jest.Mock).mockResolvedValue({
+      id: "user_1",
+      name: "Kai Brennan",
+      email: "kai@example.com",
+    });
+
+    const page = await AccountOnboardingPage({
+      params: { locale: "en" },
+      searchParams: { notice: "activation" },
+    });
+
+    render(page as React.ReactElement);
+
+    expect(screen.getByText(/Activation email sent/i)).toBeInTheDocument();
+    expect(screen.getByText(/kai@example.com/i)).toBeInTheDocument();
+  });
+
   it("shows recovery notice when an expired link is refreshed", async () => {
     (auth as jest.Mock).mockResolvedValue({ user: { id: "user_2" } });
     (getActiveOnboardingTokenForUser as jest.Mock).mockResolvedValue(
