@@ -64,8 +64,10 @@ const RootLayout = async ({
         <NextIntlClientProvider>
           <ThemeProvider attribute="class">
             {children}
-            <LangSwitcher className="absolute right-5 bottom-16 z-10" />
-            <ThemeSwitcher className="absolute right-5 bottom-5 z-10" />
+            <div className="fixed right-5 bottom-5 z-50 flex flex-col items-end gap-3">
+              <LangSwitcher />
+              <ThemeSwitcher />
+            </div>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
