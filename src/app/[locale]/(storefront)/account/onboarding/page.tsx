@@ -122,17 +122,6 @@ const AccountOnboardingPage = async ({
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      {showActivationNotice && (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <p className="text-base font-semibold">Activation email sent</p>
-          <p>
-            We emailed a secure onboarding link to{" "}
-            <span className="font-semibold">{bannerEmail}</span>. Stay on this
-            tab and complete the form after opening that email so we can verify
-            your account.
-          </p>
-        </div>
-      )}
       <header className="bg-muted/40 rounded-3xl border p-8">
         <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
           Onboarding
